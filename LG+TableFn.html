@@ -1,0 +1,1004 @@
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+<!-- #Version History::LG+TableFn.html
+v0.1: 2020-07-08, Beta version initial release
+v0.9: 2020-10-06, 
+v1.0: 2020-11-20, v1.0 pre-release. NOTE:Use Plain format (not QCAT format, QXDM > Options > Parsing option > QCAT format uncheck)
+v1.0: 2021-01-15, v1.0 official release. Working on QXDM5
+-->
+<!doctype html public "-//w3c//dtd xhtml 1.0 strict//en" "http://www.w3.org/tr/xhtml1/dtd/xhtml1-strict.dtd">
+<html>
+<head>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5" />
+<meta name="DMViewName" content="LG+TableFn v1.0" />
+<meta name="DMViewWidth" content="5000" />
+<meta name="DMViewHeight" content="2000" />
+<link rel="stylesheet" href="QXDMStyle.css" />
+<style type="text/css">
+th{ text-align : center; padding-left : 3; padding-right : 3; }   
+td{ text-align : center; padding-left : 3; padding-right : 3; }   
+td.shaded{ text-align : center; padding-left : 3; padding-right : 3; cursor : pointer }
+</style>
+</head>
+<body onunload="Unregister()" onload="Register()">
+
+<label>Sampling:</label><input type="text" size="1" id="samplingInput" value="0.01" /><label>sec</label>
+<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+<label>Update:</label><input type="text" size="1" id="updateInput" value="1" /><label>sec</label>
+<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label"></div>
+<table width="100%" id="TBL1">
+<tr> 	  
+<th colspan=1 rowspan=2>Timestamp</th>    
+<th colspan=10>Frame #0</th>
+<th colspan=10>Frame #1</th>
+<th colspan=10>Frame #2</th>
+<th colspan=10>Frame #3</th>
+</tr> 			
+<tr>
+<th colspan=1>Slot #0</th>
+<th colspan=1>Slot #1</th>
+<th colspan=1>Slot #2</th>
+<th colspan=1>Slot #3</th>
+<th colspan=1>Slot #4</th>
+<th colspan=1>Slot #5</th>
+<th colspan=1>Slot #6</th>
+<th colspan=1>Slot #7</th>
+<th colspan=1>Slot #8</th>
+<th colspan=1>Slot #9</th>
+<th colspan=1>Slot #0</th>
+<th colspan=1>Slot #1</th>
+<th colspan=1>Slot #2</th>
+<th colspan=1>Slot #3</th>
+<th colspan=1>Slot #4</th>
+<th colspan=1>Slot #5</th>
+<th colspan=1>Slot #6</th>
+<th colspan=1>Slot #7</th>
+<th colspan=1>Slot #8</th>
+<th colspan=1>Slot #9</th>
+<th colspan=1>Slot #0</th>
+<th colspan=1>Slot #1</th>
+<th colspan=1>Slot #2</th>
+<th colspan=1>Slot #3</th>
+<th colspan=1>Slot #4</th>
+<th colspan=1>Slot #5</th>
+<th colspan=1>Slot #6</th>
+<th colspan=1>Slot #7</th>
+<th colspan=1>Slot #8</th>
+<th colspan=1>Slot #9</th>
+<th colspan=1>Slot #0</th>
+<th colspan=1>Slot #1</th>
+<th colspan=1>Slot #2</th>
+<th colspan=1>Slot #3</th>
+<th colspan=1>Slot #4</th>
+<th colspan=1>Slot #5</th>
+<th colspan=1>Slot #6</th>
+<th colspan=1>Slot #7</th>
+<th colspan=1>Slot #8</th>
+<th colspan=1>Slot #9</th>
+</tr>
+<tr> 
+<td>-</td>
+<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+<td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+</tr>
+</table>	    				
+</td.left></tr>
+</table>
+<p id="timestamp"></p>
+
+
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label">Debug Box</div>
+<table width="100%" id="Box">        	
+<tr><th>Time Stamp | Key | Name | Summary</th></tr>
+<tr><td>-</td></tr>
+</table>	    				
+</td.left></tr>
+</table>
+
+	
+<p id="LG"></p>
+<script type="text/jscript">
+document.getElementById("LG").innerHTML = "<font color='gray', size=2><center>"+"Copyright by LG Electronics. All Rights Reserved"+"</center></font>";
+
+var IQXDM2;
+var Handle             = 0xFFFFFFFF;
+var UPDATE_MS          = 1000;
+var gMainTickID        = 0;
+var PrevIndex          = -1;
+var SECONDS_PER_DAY = 86400.0;
+var hex = new Array();
+var n;
+var row = 1;
+var ON  = 1;
+var OFF = 0;
+
+var timestamp = "-";
+var timestamp_sec_p = 0;
+var timestamp_table_update = 0;
+
+var radioframeAllocationPeriod = 0;
+var TBL1row = 2;
+var TBL1col = 40;
+var NR_PDSCH = new Array();
+var LTE_PDSCH = new Array();
+var NR_PDSCH_AVG = new Array();
+var LTE_PDSCH_AVG = new Array();
+var NR_PDSCH_CNT = new Array();
+var LTE_PDSCH_CNT = new Array();
+Clear_LTE_PDSCH();
+Clear_NR_PDSCH();
+var ALLOC = new Array();
+
+var B821_trig = 1;
+var B887_trig = 0;
+var B173_trig = 0;
+
+function Register()
+{
+	IQXDM2 = window.external;
+	if (IQXDM2 == null){ window.document.write( "<br />QXDM does not support required interface" ); return; }
+
+	Handle = IQXDM2.RegisterClient( "", 0 );
+	if (Handle == 0xFFFFFFFF){ window.document.write( "<br />Unable to register as client" ); }   
+
+	var clientObject = IQXDM2.ConfigureClientByKeys( Handle );
+	if (clientObject == null){ window.document.write("<br />Failed to get client interface pointer"); return; }
+
+	clientObject.AddLog(0xB173);
+	clientObject.AddLog(0xB821);
+	clientObject.AddLog(0xB887);
+	
+	
+	clientObject.CommitConfig();     
+	gMainTickID = setInterval( 'ProcessLogs()', UPDATE_MS );  
+}
+
+function Unregister()
+{
+	if (gMainTickID != 0){ window.clearInterval( gMainTickID ); gMainTickID = 0; }
+   	if (Handle != 0xFFFFFFFF){ IQXDM2.UnregisterClient( Handle ); }
+}
+
+function ProcessLogs()
+{   
+	var CurrIndex = IQXDM2.GetClientItemCount( Handle ) - 1;
+	if (PrevIndex > CurrIndex){ PrevIndex = -1; }
+	if (CurrIndex < 0 || CurrIndex == PrevIndex){ return; }  	
+   
+	for (var i = PrevIndex + 1; i <= CurrIndex; i++)
+	{
+		var Item = IQXDM2.GetClientItem( Handle, i );
+
+		if (Item != null)
+		{
+			var ItemKey = Item.GetItemKeyText();
+			timestamp =  Item.GetItemSpecificTimestampText( false, true );
+			timestamp_sec = timestamp_in_sec();
+			//Box.rows[row++].cells[0].innerHTML = timestamp +" "+ItemKey +" "+timestamp_sec ; addRow(); //debug message
+
+			if(timestamp_sec - timestamp_sec_p >= samplingInput.value || timestamp_sec - timestamp_sec_p < 0) //read log packets at every sampling interval
+			{			
+				timestamp_sec_p = timestamp_sec;
+				B887_trig = 1;
+				B173_trig = 1;
+			}
+
+			if(timestamp_sec - timestamp_table_update >= updateInput.value || timestamp_sec - timestamp_table_update < 0) //read log packets at every sampling interval
+			{			
+				timestamp_table_update = timestamp_sec;
+
+				Update_TBL1_pdsch ();
+				Clear_LTE_PDSCH();
+				Clear_NR_PDSCH();
+			}
+
+			//12:13:15.873	[0xB0C0]	BCCH_DL_SCH / SystemInformation
+			//mbsfn-SubframeConfigList 
+            //  {
+            //    {
+            //      radioframeAllocationPeriod n4,
+            //      radioframeAllocationOffset 0,
+            //      subframeAllocation fourFrames : '11000000 00001000 00000000'B
+            //    }
+            //  },
+
+			if(ItemKey == "[0xB821]")
+			{
+				if(B821_trig == 1)
+				{
+					B821_trig = 0;
+					var messageBody = Item.GetItemParsedText();
+					
+					//12:13:15.891	[0xB821]	NR5G RRC OTA Packet
+					//..
+					//lte-CRS-ToMatchAround setup : 
+	                //  {
+	                //    carrierFreqDL 312,
+	                //    carrierBandwidthDL n50,
+	                //    mbsfn-SubframeConfigList 
+	                //    {
+	                //      {
+	                //        radioframeAllocationPeriod n4,
+	                //        radioframeAllocationOffset 0,
+	                //        subframeAllocation1 fourFrames : '11000000 00001000 00000000'B
+	                //      }
+	                //    },
+	                //    nrofCRS-Ports n2,
+	                //    v-Shift n1
+	                //  },
+	                //...
+	                //ssb-PositionsInBurst shortBitmap : '0010'B,
+	                //ssb-periodicityServingCell ms20,
+
+					//NOTE THAT radioframeAllocationPeriod=4, and ssb-periodicityServingCell=20ms supported only
+					if( messageBody.indexOf("lte-CRS-ToMatchAround") !=-1 && messageBody.indexOf("mbsfn-SubframeConfigList") !=-1 )
+					{
+		            	radioframeAllocationPeriod = parseInt(messageBody.split("radioframeAllocationPeriod")[1].split("n")[1],10) ;
+		            	var radioframeAllocationOffset = parseInt(messageBody.split("radioframeAllocationOffset")[1],10) ;
+		            	var subframeAllocation1 = messageBody.split("subframeAllocation1")[1].split("'")[1];
+		            	var subframeAllocation1_0 = subframeAllocation1.split(" ")[0];
+		            	var subframeAllocation1_1 = subframeAllocation1.split(" ")[1];
+		            	var subframeAllocation1_2 = subframeAllocation1.split(" ")[2];
+		            	var ssb_PositionsInBurst = messageBody.split("ssb-PositionsInBurst")[1].split("'")[1];
+		            	var ssb_periodicityServingCell = messageBody.split("ssb-periodicityServingCell")[1].split("s")[1];
+		            	Box.rows[row++].cells[0].innerHTML = timestamp +" "+ ItemKey +" radioframeAllocationPeriod: "+ radioframeAllocationPeriod +" radioframeAllocationOffset: "+ radioframeAllocationOffset +" subframeAllocation1: "+ subframeAllocation1 +" ssb_PositionsInBurst: "+ ssb_PositionsInBurst +" ssb_periodicityServingCell: "+ ssb_periodicityServingCell ; addRow(); //debug message
+		            						
+		            	Update_TBL1_ssb (ssb_PositionsInBurst);
+						Update_TBL1_mbsfn (subframeAllocation1_0, subframeAllocation1_1, subframeAllocation1_2);					
+					}
+				}
+
+			}
+
+			if(ItemKey == "[0xB887]")
+			{
+				if(B887_trig == 1){ B887_trig = 0;
+					var messageBody = Item.GetItemParsedText();
+					//if(radioframeAllocationPeriod == 0){ var period = 4; } //VZW Ericsson, Nokia -- Unfortunately, NR OTA is not supported on QXDM
+					if(radioframeAllocationPeriod == 0){ var period = 1; } //VZW Samsung
+					else{ var period = radioframeAllocationPeriod; }			
+
+					
+					//trade off between details and processing delay for which number of cnt is used
+					Cal_NR_PDSCH (messageBody, 0, period);
+					Cal_NR_PDSCH (messageBody, 1, period);
+					Cal_NR_PDSCH (messageBody, 2, period);
+					Cal_NR_PDSCH (messageBody, 3, period);
+					Cal_NR_PDSCH (messageBody, 4, period);
+					Cal_NR_PDSCH (messageBody, 5, period);
+					Cal_NR_PDSCH (messageBody, 6, period);
+					Cal_NR_PDSCH (messageBody, 7, period);
+					Cal_NR_PDSCH (messageBody, 8, period);
+					Cal_NR_PDSCH (messageBody, 9, period);					
+				}
+			}
+
+
+			if(ItemKey == "[0xB173]")
+			{			
+				//if(B173_trig == 1){	B173_trig = 0;
+					var messageBody = Item.GetItemParsedText();
+					var period;
+					//if(radioframeAllocationPeriod == 0){ var period = 4; } //VZW Ericsson, Nokia -- Unfortunately, NR OTA is not supported on QXDM
+					if(radioframeAllocationPeriod == 0){ var period = 1; } //VZW Samsung								
+					else{ period = radioframeAllocationPeriod; }					
+					//trade off between details and processing delay for which number of cnt is used	
+					//Box.rows[row++].cells[0].innerHTML = timestamp +" "+ItemKey +" "+messageBody ; addRow(); //debug message
+					Cal_LTE_PDSCH (messageBody, 0, period);
+					Cal_LTE_PDSCH (messageBody, 1, period);
+					Cal_LTE_PDSCH (messageBody, 2, period);
+					Cal_LTE_PDSCH (messageBody, 3, period);
+					Cal_LTE_PDSCH (messageBody, 4, period);
+					Cal_LTE_PDSCH (messageBody, 5, period);
+					Cal_LTE_PDSCH (messageBody, 6, period);
+					Cal_LTE_PDSCH (messageBody, 7, period);
+					Cal_LTE_PDSCH (messageBody, 8, period);
+					Cal_LTE_PDSCH (messageBody, 9, period);
+				//}				
+			}
+			
+			
+		} 
+	}   
+	PrevIndex = CurrIndex;
+}
+
+
+
+function Cal_NR_PDSCH (messageBody, cnt, period)
+{
+	var idx = messageBody.search(new RegExp( "Records\\["+cnt+"\\]",'g'));
+	if(idx>0){
+		var Frame = parseInt(messageBody.substring(idx+1000,idx).split("Frame =")[1],10);
+		var Slot = parseInt(messageBody.substring(idx+1000,idx).split("Slot =")[1],10);						
+		var Frame_mod =  parseInt(Frame % period,10);
+		var ro = parseInt(Frame_mod*10 + Slot,10);
+		var RB =  parseInt(messageBody.substring(idx+1000,idx).split("Num Rbs =")[1],10);
+		if(ro>=0 && ro<40){ 
+			NR_PDSCH[ro] += RB; //accumulated
+			NR_PDSCH_CNT[ro]++;
+			NR_PDSCH_AVG[ro] = parseInt(NR_PDSCH[ro]/NR_PDSCH_CNT[ro],10);
+		}
+	}
+	/*
+	var idx = messageBody.search(new RegExp( "\\|\\s+"+cnt+"\\|\\s+\\d+\\|\\s+\\d+kHz\\|" , 'g'));					
+	if(idx > 0){	
+		var str = messageBody.substring(idx+400, idx).split("|");
+		var Frame =  parseInt(str[4],10);		
+		var Slot =  parseInt(str[2],10);							
+		var Frame_mod =  parseInt(Frame % period,10);
+		var ro = parseInt(Frame_mod*10 + Slot,10);
+		//var TB =  parseInt(str[16],10); //TB size
+		var RB =  parseInt(str[19],10); //RB
+		if(ro>=0 && ro<40){ 
+			NR_PDSCH[ro] += RB; //accumulated
+			NR_PDSCH_CNT[ro]++;
+			NR_PDSCH_AVG[ro] = parseInt(NR_PDSCH[ro]/NR_PDSCH_CNT[ro],10);
+		}
+	}
+	*/
+}
+
+function Cal_LTE_PDSCH (messageBody, cnt, period)
+{	
+	var idx = messageBody.search(new RegExp( "Records\\["+cnt+"\\]",'g'));	
+	if(idx>0){
+		if(messageBody.substring(idx+2000,idx).indexOf("Serving Cell Index = PCELL")!=-1){
+			var Frame = parseInt(messageBody.substring(idx+2000,idx).split("Frame Num =")[1],10);
+			var Slot = parseInt(messageBody.substring(idx+2000,idx).split("Subframe Num =")[1],10);						
+			var Frame_mod =  parseInt(Frame % period,10);
+			var ro = parseInt(Frame_mod*10 + Slot,10);
+			var RB =  parseInt(messageBody.substring(idx+2000,idx).split("Num RBs =")[1],10);
+			//Box.rows[row++].cells[0].innerHTML = Frame  +" "+Slot  +" "+Frame_mod  +" "+ro +" "+RB ; addRow(); //debug message
+			if(ro>=0 && ro<40){ 
+				LTE_PDSCH[ro] += RB; //accumulated
+				LTE_PDSCH_CNT[ro]++;
+				LTE_PDSCH_AVG[ro] = parseInt(LTE_PDSCH[ro]/LTE_PDSCH_CNT[ro],10);
+			}
+		}
+	}
+	/*
+	var idx = messageBody.search(new RegExp( "\\|\\s+"+cnt+"\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+PCELL", 'g'));
+	if(idx > 0){	
+		var str = messageBody.substring(idx+100, idx).split("|");
+		var Frame =  parseInt(str[3],10);		
+		var Slot =  parseInt(str[2],10);							
+		var Frame_mod =  parseInt(Frame % period,10);
+		var ro = parseInt(Frame_mod*10 + Slot,10);
+		var RB =  parseInt(str[4],10); //RB
+		if(ro>=0 && ro<40){ 
+			//if(ltecnt>0){ LTE_PDSCH_AVG[ro] = avg([LTE_PDSCH_AVG[ro], RB]); }
+			//else{ LTE_PDSCH_AVG[ro] = RB; }
+			LTE_PDSCH[ro] += RB;
+			LTE_PDSCH_CNT[ro]++;
+			//Box.rows[row++].cells[0].innerHTML = timestamp +" "+ ro +" "+ LTE_PDSCH[ro] +" "+ RB +" "+ LTE_PDSCH_CNT[ro] ; addRow(); //debug message
+			LTE_PDSCH_AVG[ro] = parseInt(LTE_PDSCH[ro]/LTE_PDSCH_CNT[ro],10);
+		}		
+	}
+	*/
+}
+
+
+
+function Alloc_PDSCH (ro)
+{
+/*
+	if(NR_PDSCH[ro] == 0 && LTE_PDSCH[ro] == 0){ return  LTE_PDSCH[ro]+"/"+NR_PDSCH[ro] ; }	
+	else if(NR_PDSCH[ro] != 0 && LTE_PDSCH[ro] != 0){ return  "<div align='center' style='background-color:#ABEBC6'>"+ LTE_PDSCH[ro]+"/"+NR_PDSCH[ro] +"</div>"; }	
+	else if(NR_PDSCH[ro] != 0 && LTE_PDSCH[ro] == 0){ return  "<div align='center' style='background-color:#F1948A'>"+ LTE_PDSCH[ro]+"/"+NR_PDSCH[ro] +"</div>"; }	
+	else if(NR_PDSCH[ro] == 0 && LTE_PDSCH[ro] != 0){ return  "<div align='center' style='background-color:#85C1E9'>"+ LTE_PDSCH[ro]+"/"+NR_PDSCH[ro] +"</div>"; }	
+	else{  return "n/a"; }
+*/
+/*
+	if(NR_PDSCH[ro] == 0 && LTE_PDSCH[ro] == 0){ return  LTE_PDSCH[ro]+"/"+NR_PDSCH[ro] ; }	
+	else if(NR_PDSCH[ro] != 0 && LTE_PDSCH[ro] != 0){ return  "<div align='center' style='background-color:#ABEBC6'>"+ LTE_PDSCH[ro]+"/"+NR_PDSCH[ro] +"("+LTE_PDSCH_AVG[ro]+"/"+NR_PDSCH_AVG[ro]+")" +"</div>"; }	
+	else if(NR_PDSCH[ro] != 0 && LTE_PDSCH[ro] == 0){ return  "<div align='center' style='background-color:#F1948A'>"+ LTE_PDSCH[ro]+"/"+NR_PDSCH[ro] +"("+LTE_PDSCH_AVG[ro]+"/"+NR_PDSCH_AVG[ro]+")" +"</div>"; }	
+	else if(NR_PDSCH[ro] == 0 && LTE_PDSCH[ro] != 0){ return  "<div align='center' style='background-color:#85C1E9'>"+ LTE_PDSCH[ro]+"/"+NR_PDSCH[ro] +"("+LTE_PDSCH_AVG[ro]+"/"+NR_PDSCH_AVG[ro]+")" +"</div>"; }	
+	else{  return "n/a"; }
+*/
+	if(NR_PDSCH_AVG[ro] == 0 && LTE_PDSCH_AVG[ro] == 0){ return  LTE_PDSCH_AVG[ro]+"/"+NR_PDSCH_AVG[ro] ; }	
+	else if(NR_PDSCH_AVG[ro] != 0 && LTE_PDSCH_AVG[ro] != 0){ return  "<div align='center' style='background-color:#ABEBC6'>"+ LTE_PDSCH_AVG[ro]+"/"+NR_PDSCH_AVG[ro] +"</div>"; }	
+	else if(NR_PDSCH_AVG[ro] != 0 && LTE_PDSCH_AVG[ro] == 0){ return  "<div align='center' style='background-color:#F1948A'>"+ LTE_PDSCH_AVG[ro]+"/"+NR_PDSCH_AVG[ro] +"</div>"; }	
+	else if(NR_PDSCH_AVG[ro] == 0 && LTE_PDSCH_AVG[ro] != 0){ return  "<div align='center' style='background-color:#85C1E9'>"+ LTE_PDSCH_AVG[ro]+"/"+NR_PDSCH_AVG[ro] +"</div>"; }	
+	else{  return "n/a"; }
+
+}
+
+function Update_TBL1_pdsch ()
+{			
+	var col=0;
+	var nr=0;
+	var lte=0;
+	TBL1.rows[TBL1row].cells[col++].innerHTML = timestamp;
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+	TBL1.rows[TBL1row].cells[col++].innerHTML = Alloc_PDSCH(nr++);
+
+	addTBL1row();	
+	TBL1row++;
+}
+
+
+
+function Clear_LTE_PDSCH ()
+{
+	var ro=0;
+	//Please do not use for loop in script
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+	LTE_PDSCH[ro++] = 0;
+
+	var ro=0;
+	//Please do not use for loop in script
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+	LTE_PDSCH_AVG[ro++] = 0;
+
+	var ro=0;
+	//Please do not use for loop in script
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+	LTE_PDSCH_CNT[ro++] = 0;
+
+
+}
+
+function Clear_NR_PDSCH ()
+{
+	var ro=0;
+	//Please do not use for loop in script
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+	NR_PDSCH[ro++] = 0;
+
+	var ro=0;
+	//Please do not use for loop in script
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+	NR_PDSCH_AVG[ro++] = 0;
+
+	var ro=0;
+	//Please do not use for loop in script
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+	NR_PDSCH_CNT[ro++] = 0;
+}
+
+function Update_TBL1_ssb (ssb_PositionsInBurst)
+{			
+	var col=0;
+	var ssb=0;
+	TBL1.rows[TBL1row].cells[col++].innerHTML = timestamp;
+	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));
+
+	var ssb=0;
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_SSB(parseInt(ssb_PositionsInBurst[ssb++],10),parseInt(ssb_PositionsInBurst[ssb++],10));
+	
+	addTBL1row();	
+	TBL1row++;
+}
+
+
+
+function Update_TBL1_mbsfn (subframeAllocation1_0, subframeAllocation1_1, subframeAllocation1_2)
+{			
+	var col=0;
+	TBL1.rows[TBL1row].cells[col++].innerHTML = timestamp;
+	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_0[0],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_0[1],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_0[2],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_0[3],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_0[4],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_0[5],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_0[6],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_0[7],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_1[0],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_1[1],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_1[2],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_1[3],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_1[4],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_1[5],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_1[6],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_1[7],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_2[0],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_2[1],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();
+
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_2[2],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_2[3],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_2[4],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_2[5],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_2[6],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = check_MBSFN(parseInt(subframeAllocation1_2[7],10));	
+	TBL1.rows[TBL1row].cells[col++].innerHTML = default_frame();
+
+	addTBL1row();	
+	TBL1row++;
+}
+
+function check_SSB (val1, val2)
+{
+	if(val1==1 || val2==1){ return "<font color='red'>"+"SSB"+"</font>"; }
+	else{ return "-"; }
+}
+
+function check_MBSFN (val)
+{
+	if(val == 1){ return "<font color='red'>"+"MBSFN"+"</font>"; }
+	else if(val == 0){ return "<font color='blue'>"+"LTE/NR"+"</font>"; }
+	else{ return "n/a"; }	
+}
+
+function default_frame ()
+{
+	return "<font color='blue'>"+"LTE/NR"+"</font>"; 
+}
+
+function addTBL1row()
+{
+	var TBL1_col = TBL1.rows[TBL1row].cells.length;   
+  	var TBL1_row = TBL1.insertRow(TBL1.rows.length);
+	for(var i=0;i<TBL1_col;i++)
+	{ 
+		var cell = TBL1_row.insertCell();
+		cell.innerHTML = "<td>-</td>";	
+	}
+}
+
+// library
+function addRow(){ var Box_row = Box.insertRow(Box.rows.length); var cell = Box_row.insertCell(); cell.innerHTML = "<td>-</td>"; }
+
+function timestamp_in_sec()
+{
+	var split = timestamp.split(":");
+	//var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) + (parseFloat( parseInt(split[2].split(".")[1],10) / 1000).toFixed(3)); //unit of seconds
+	var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) +(parseFloat( parseInt(split[2].split(".")[1],10) / 1000)); //unit of seconds
+	return timestamp_sec_unit;		
+}
+
+
+// math function
+function Log10(x)
+{
+	return Math.log(x)/Math.LN10 ; 
+}
+
+function dec2hex(d) 
+{
+	return d.toString(16);
+}
+
+function hex2dec(h) 
+{
+	return parseInt(h,16);
+} 
+
+function bin2dec(b)
+{
+	var i;
+	var s=0;
+
+	var l=strlen(b); 
+	for(i=1; i<=l; i++)
+	{
+		var pow2 = Math.pow( 2, l-i);
+		s = s + b[i-1] * pow2;
+	}
+	return s;
+}
+
+function strlen(s) 
+{
+	return s.length;
+} 
+
+function avg ( arr ) 
+{
+	if ( typeof ( arr ) === "number" ) 
+	{
+		return arr;
+	}
+
+	var a = sum(arr) / arr.length;
+	return a;
+}
+
+function sum ( arr ) 
+{
+	if ( typeof ( arr ) === "number" ) 
+	{
+		return arr;
+	}
+
+	var s = 0;
+	for ( var i in arr ) 
+	{
+		s += arr[i];
+	}
+	return s;
+}
+
+function stdev ( arr ) 
+{
+	if ( typeof ( arr ) === "number" ) 
+	{
+		return 0;
+	}
+
+	var mean = avg(arr);
+	var ret = 0;
+	for ( var i in arr ) 
+	{
+		ret += Math.pow(arr[i] - mean, 2) / ( arr.length - 1 );
+	}
+
+	return Math.sqrt(ret);
+}
+
+function confidence95 ( arr ) 
+{
+	if ( typeof(arr) === "number" ) 
+	{
+		return 0;
+	}
+
+	return 1.96 * stdev(arr) / Math.sqrt(arr.length)
+}
+
+function stdevPercent ( arr ) 
+{
+  	return stdev(arr) / avg(arr);
+}
+
+
+</script>
+</body>
+</html>
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+

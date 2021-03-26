@@ -1,0 +1,153 @@
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+<!-- #Version History::LG+GaugeSpeed.html
+v0.9: 2020-10-06, initial version
+v1.0: 2020-11-20, v1.0 pre-release. NOTE:Use Plain format (not QCAT format, QXDM > Options > Parsing option > QCAT format uncheck)
+v1.0: 2021-01-15, v1.0 official release. Working on QXDM5
+-->
+<!doctype html public "-//w3c//dtd xhtml 1.0 strict//en" "http://www.w3.org/tr/xhtml1/dtd/xhtml1-strict.dtd">
+<html>
+<head>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5" />
+<meta name="DMViewName" content="LG+GaugeSpeed v1.0" />
+<meta name="DMViewWidth" content="5000" />
+<meta name="DMViewHeight" content="1300" />
+<link rel="stylesheet" href="QXDMStyle.css" />
+<style type="text/css">
+th{ text-align : center; padding-left : 3; padding-right : 3; }   
+td{ text-align : center; padding-left : 3; padding-right : 3; } 
+td.shaded{ text-align : left; padding-left : 3; padding-right : 3; cursor : pointer }
+</style>
+</head>
+<body onunload="Unregister()" onload="Register()">
+
+<label>DL Range:</label><input type="text" size="6" id="DLrangeInput" value="5000000" /><label>kbps</label>
+&nbsp;
+<label>UL Range:</label><input type="text" size="6" id="ULrangeInput" value="200000" /><label>kbps</label>
+
+<div id="chart_div1"><style>#chart_div2 { height: 200px; width: 300px; }</style></div>
+<div id="chart_div2"><style>#chart_div2 { height: 100px; width: 300px; }</style></div>
+<p id="timestamp"></p>
+<p id="LG"></p>	
+
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/jscript">
+google.charts.load('current', {'packages':['gauge']});
+document.getElementById("LG").innerHTML = "<font color='gray', size=2><center>"+"Copyright by LG Electronics. All Rights Reserved"+"</center></font>";
+
+var IQXDM2;
+var Handle = 0xFFFFFFFF;
+var UPDATE_MS = 1000;
+var gMainTickID = 0;
+var PrevIndex = -1;
+var row = 1;
+
+var SECONDS_PER_DAY = 86400.0;
+
+var DLRange = 0; //kbps
+var ULRange = 0; //kbps
+
+//---- DL ----//
+var NR_DL_TPUT_PHY;
+var LTE_DL_TPUT_PHY;
+var DL_TPUT;
+
+//---- UL ----//
+var NR_UL_TPUT_PHY;
+var LTE_UL_TPUT_PHY;
+var UL_TPUT;
+
+function Register()
+{
+	IQXDM2 = window.external;
+	if (IQXDM2 == null){ window.document.write( "<br />QXDM does not support required interface" ); return; }
+
+	Handle = IQXDM2.RegisterClient( "", 0 );
+	if (Handle == 0xFFFFFFFF){ window.document.write( "<br />Unable to register as client" ); }   
+
+	var clientObject = IQXDM2.ConfigureClientByKeys( Handle );
+	if (clientObject == null){ window.document.write("<br />Failed to get client interface pointer"); return; }
+
+	clientObject.AddQshTrace(76,4,0); //QTRACE QSH ANALYSIS
+	clientObject.AddQshTrace(76,4,2); //QTRACE QSH ANALYSIS
+	
+	clientObject.CommitConfig();  
+	gMainTickID = setInterval( 'ProcessLogs()', UPDATE_MS );  
+}
+
+
+function Unregister()
+{
+   if (gMainTickID != 0){ window.clearInterval( gMainTickID ); gMainTickID = 0; }
+   if (Handle != 0xFFFFFFFF){ IQXDM2.UnregisterClient( Handle ); }
+}
+
+function ProcessLogs()
+{   
+	var CurrIndex = IQXDM2.GetClientItemCount( Handle ) - 1;
+	if (PrevIndex > CurrIndex){ PrevIndex = -1; }
+	if (CurrIndex < 0 || CurrIndex == PrevIndex){ return; } 
+
+	DLRange = DLrangeInput.value;
+	ULRange = ULrangeInput.value;
+	   	
+	for (var i = PrevIndex + 1; i <= CurrIndex; i++)
+	{
+		var Item = IQXDM2.GetClientItem( Handle, i );
+		if (Item != null)
+		{
+			var ItemKey = Item.GetItemKeyText();
+			timestamp =  Item.GetItemSpecificTimestampText( false, true );
+			document.getElementById("timestamp").innerHTML = "<font color='black', size=2><center>"+"Current Timestamp: "+timestamp+"</center></font>";
+			
+			if(ItemKey == "[0076/04/0]" || ItemKey == "[0076/04/2]")
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();		
+				
+				//---- DL ----//
+				if(summary.indexOf("ENL2DL") !=-1 && summary.indexOf("5gPHY|") !=-1){ NR_DL_TPUT_PHY = parseInt(summary.split("5gPHY|")[1],10); }
+				if(summary.indexOf("ENL2DL") !=-1 && summary.indexOf("4gPHY|") !=-1){ LTE_DL_TPUT_PHY = parseInt(summary.split("4gPHY|")[1],10); }				
+				if(summary.indexOf("ENL2DL") !=-1 && summary.indexOf("4gPDCP|") !=-1){ DL_TPUT = NR_DL_TPUT_PHY+LTE_DL_TPUT_PHY; draw1(); }			
+
+				//---- UL ----//
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("PHY") !=-1 && summary.indexOf("NR") !=-1){ NR_UL_TPUT_PHY = parseInt(summary.split("PHY|")[1],10); }					
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("PHY") !=-1 && summary.indexOf("LT") !=-1){ LTE_UL_TPUT_PHY = parseInt(summary.split("PHY|")[1],10); }
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("IPA") !=-1 && summary.indexOf("LT") !=-1){ UL_TPUT = NR_UL_TPUT_PHY+LTE_UL_TPUT_PHY; draw2(); }
+			}
+				    	
+		} 
+	}   
+	PrevIndex = CurrIndex;
+}
+
+
+function draw1() {
+	var data = new google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          ['DL', DL_TPUT],
+          ['4G', LTE_DL_TPUT_PHY],
+          ['5G', NR_DL_TPUT_PHY]
+        ]);
+
+    var options = { width:400, height:200, min:0, max:DLRange, redFrom:DLRange*0.9, redTo:DLRange, yellowFrom:DLRange*0.75, yellowTo:DLRange*0.9, minorTicks: 0 };
+	var chart = new google.visualization.Gauge(document.getElementById('chart_div1'));
+	chart.draw(data, options);
+}
+function draw2() {
+	var data = new google.visualization.arrayToDataTable([
+          ['Label', 'Value'],
+          ['UL', UL_TPUT],
+          ['4G', LTE_UL_TPUT_PHY],
+          ['5G', NR_UL_TPUT_PHY]
+        ]);
+
+    var options = { width:400, height:200, min:0, max:ULRange, redFrom:ULRange*0.9, redTo:ULRange, yellowFrom:ULRange*0.75, yellowTo:ULRange*0.9, minorTicks: 0 };
+	var chart = new google.visualization.Gauge(document.getElementById('chart_div2'));
+	chart.draw(data, options);	
+}
+
+
+</script>
+</body>
+</html>
+

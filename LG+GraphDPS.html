@@ -1,0 +1,240 @@
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+<!-- #Version History::LG+GraphDPS.html
+v0.1: 2020-07-13, Beta version initial release
+v0.9: 2020-10-05, release v0.9
+v1.0: 2020-11-20, v1.0 pre-release. NOTE:Use Plain format (not QCAT format, QXDM > Options > Parsing option > QCAT format uncheck)
+v1.0: 2021-01-15, v1.0 official release. Working on QXDM5
+-->
+<!doctype html public "-//w3c//dtd xhtml 1.0 strict//en" "http://www.w3.org/tr/xhtml1/dtd/xhtml1-strict.dtd">
+<html>
+<head>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5" />
+<meta name="DMViewName" content="LG+GraphDPS v1.0" />
+<meta name="DMViewWidth" content="5000" />
+<meta name="DMViewHeight" content="2000" />
+<link rel="stylesheet" href="QXDMStyle.css" />
+<style type="text/css">
+th{ text-align : center; padding-left : 3; padding-right : 3; }   
+td{ text-align : center; padding-left : 3; padding-right : 3; }   
+td.shaded{ text-align : center; padding-left : 3; padding-right : 3; cursor : pointer }
+</style>
+</head>
+<body onunload="Unregister()" onload="Register()">
+
+<label>Sampling:</label><input type="text" size="1" id="samplingInput" value="0.1" /><label>sec</label>
+<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+<label>Window:</label><input type="text" size="1" id="windowInput" value="3000" /><label>sec</label>
+<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+<p id="ID"></p>
+
+<div id="GRAPH1"><style>#GRAPH1 { height: 500px; width: 100%; }</style></div>
+<p id="timestamp"></p>
+
+
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label">Debug Box</div>
+<table width="100%" id="Box">        	
+<tr><th>Time Stamp | Key | Name | Summary</th></tr>
+<tr><td>-</td></tr>
+</table>	    				
+</td.left></tr>
+</table>
+
+	
+<p id="LG"></p>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/jscript">
+google.charts.load('current', {'packages':['corechart']});
+document.getElementById("LG").innerHTML = "<font color='gray', size=2><center>"+"Copyright by LG Electronics. All Rights Reserved"+"</center></font>";
+
+var IQXDM2;
+var Handle             = 0xFFFFFFFF;
+var UPDATE_MS          = 1000;
+var gMainTickID        = 0;
+var PrevIndex          = -1;
+var SECONDS_PER_DAY = 86400.0;
+var hex = new Array();
+var n;
+var row = 1;
+var ON  = 1;
+var OFF = 0;
+
+var timestamp = "-";
+var timestamp_sec = 0;
+var timestamp_sec_p = 0;
+
+var windowsize = 0;
+
+var cnt = 0;
+var TIME_STAMP = new Array();
+
+var endc_pwr_db = 0;
+var endc_pwr_lv = 0;
+var ENDC_DB = new Array();
+var NR_DB = new Array();
+var LTE_DB = new Array();
+var NR_MTPL = new Array();
+var NR_LIMIT = new Array();
+var B8D2_trig = 0;
+
+endc_pwr_db = 26.3;
+endc_pwr_lv = Math.pow(10, endc_pwr_db/10) ;
+					
+function Register()
+{
+	IQXDM2 = window.external;
+	if (IQXDM2 == null){ window.document.write( "<br />QXDM does not support required interface" ); return; }
+
+	Handle = IQXDM2.RegisterClient( "", 0 );
+	if (Handle == 0xFFFFFFFF){ window.document.write( "<br />Unable to register as client" ); }   
+
+	var clientObject = IQXDM2.ConfigureClientByKeys( Handle );
+	if (clientObject == null){ window.document.write("<br />Failed to get client interface pointer"); return; }
+		
+	clientObject.AddQshTrace(73,0,2); 
+	clientObject.AddLog(0xB8D2);	
+	
+	clientObject.CommitConfig();     
+	gMainTickID = setInterval( 'ProcessLogs()', UPDATE_MS );  
+}
+
+function Unregister()
+{
+	if (gMainTickID != 0){ window.clearInterval( gMainTickID ); gMainTickID = 0; }
+   	if (Handle != 0xFFFFFFFF){ IQXDM2.UnregisterClient( Handle ); }
+}
+
+function ProcessLogs()
+{   
+	var CurrIndex = IQXDM2.GetClientItemCount( Handle ) - 1;
+	if (PrevIndex > CurrIndex){ PrevIndex = -1; }
+	if (CurrIndex < 0 || CurrIndex == PrevIndex){ return; }  
+
+	windowsize = windowInput.value;
+   
+	for (var i = PrevIndex + 1; i <= CurrIndex; i++)
+	{
+		var Item = IQXDM2.GetClientItem( Handle, i );
+
+		if (Item != null)
+		{
+			var ItemKey = Item.GetItemKeyText();
+			timestamp =  Item.GetItemSpecificTimestampText( false, true );
+			timestamp_sec = timestamp_in_sec();									
+			document.getElementById("timestamp").innerHTML = "<font color='black', size=2><center>"+"Current Timestamp: "+timestamp+"</center></font>";
+			
+			if(timestamp_sec - timestamp_sec_p >= samplingInput.value || timestamp_sec - timestamp_sec_p < 0) //read log packets at every sampling interval
+			{
+				timestamp_sec_p = timestamp_sec; 				
+				B8D2_trig = 1;
+			}			
+
+
+			if(ItemKey == "[0073/00/2]")
+			{
+				//var summary = Item.GetItemSummary();
+				var summary = Item.GetItemParsedText();		
+
+				//[  73/ 0/2]              QTRACE                   00:41:16.883             RF/NR5G/High/RF          [   rf_nr5g_sub6_tx.c   4081] rf_nr5g_sub6_tx_config: static_mtpl 245 static_mtpl_endc 246 power_class_adjust_db10 30                         Legacy Diag File
+				if( summary.indexOf("static_mtpl_endc") !=-1 )
+ 				{
+					//endc_pwr_db = parseInt(summary.split("static_mtpl_endc")[1],10)/10;	
+					endc_pwr_db = 25.5;
+					endc_pwr_lv = Math.pow(10, endc_pwr_db/10) ;
+					Box.rows[row++].cells[0].innerHTML = timestamp +" "+ ItemKey +" "+ summary +" endc_pwr_db:"+ endc_pwr_db +" endc_pwr_lv:"+ endc_pwr_lv  ; addRow(); //debug message
+				}
+			}
+			
+			
+			if(ItemKey == "[0xB8D2]")
+			{
+				if(B8D2_trig == 1 && endc_pwr_db != 0){ B8D2_trig = 0;	
+				var messageBody = Item.GetItemParsedText();
+				var idx = messageBody.search(new RegExp( "PUSCH Data {",'g')); 
+				var nr_pwr; var nr_mtpl;
+				if(idx>0){ 
+					//var nr_pathloss = parseInt(messageBody.substring(idx+500,idx).split("Pathloss =")[1],10); 
+					var nr_pwr = parseInt(messageBody.substring(idx+500,idx).split("Transmit Power =")[1],10); 
+					var nr_mtpl = parseInt(messageBody.substring(idx+500,idx).split("MTPL =")[1],10); 
+				}
+				
+				var idx = messageBody.search(new RegExp( "DPS Info Type\\s+=\\s+CHAN",'g')); 
+				if(idx>0){ 
+					var lte_pwr_db = parseInt(messageBody.substring(idx+300,idx).split("LTE Linear Power =")[1],10);
+					var lte_pwr_lv = Math.pow(10, lte_pwr_db/10) ;
+					var nr_pwr_lv = endc_pwr_lv - lte_pwr_lv;							
+					var nr_pwr_db = 10*Log10(nr_pwr_lv); //allowed NR Power derived from that ENDC MTPL LV - LTE POWER LV then dB converting							
+					TIME_STAMP[cnt] = timestamp;
+					LTE_DB[cnt] = lte_pwr_db;	
+					NR_DB[cnt] = nr_pwr;	
+					NR_MTPL[cnt] = nr_mtpl;	
+					NR_LIMIT[cnt] = nr_pwr_db;	
+					ENDC_DB[cnt] = endc_pwr_db;								
+					cnt++;					
+					draw1();
+				}		
+				}	
+			}
+			
+			
+		} 
+	}   
+	PrevIndex = CurrIndex;
+}
+
+
+function draw1() 
+{
+	var data=[];
+	var Header= ['time', '4G Tx Power', '5G Tx Power', '5G MTPL', '5G Tx Allowed', 'ENDC MTPL'];
+	data.push(Header);	
+
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size
+						
+	for (var i = start; i < cnt; i++) 	
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(LTE_DB[i]);
+		temp.push(NR_DB[i]);
+		temp.push(NR_MTPL[i]);
+		temp.push(NR_LIMIT[i]);
+		temp.push(ENDC_DB[i]);
+		data.push(temp);
+	}
+	var data = google.visualization.arrayToDataTable(data);
+
+	var options = {
+		title: 'ENDC TRANSMIT POWER AND MTPL',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'timestamp'},
+        vAxis: {title: 'dBm'},
+        chartArea: {width:'75%'},
+        pointSize: 5,
+		};
+
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH1'));
+	chart.draw(data, options);
+}
+
+
+function addRow(){ var Box_row = Box.insertRow(Box.rows.length); var cell = Box_row.insertCell(); cell.innerHTML = "<td>-</td>"; }
+
+function timestamp_in_sec()
+{
+	var split = timestamp.split(":");
+	//var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) + (parseFloat( parseInt(split[2].split(".")[1],10) / 1000).toFixed(3)); //unit of seconds
+	var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) +(parseFloat( parseInt(split[2].split(".")[1],10) / 1000)); //unit of seconds
+	return timestamp_sec_unit;		
+}
+
+function Log10(x){ return Math.log(x)/Math.LN10; }
+
+</script>
+</body>
+</html>
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+

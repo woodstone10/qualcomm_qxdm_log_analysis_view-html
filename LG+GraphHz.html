@@ -1,0 +1,587 @@
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+<!-- #Version History::LG+GraphHz.html
+v0.1: 2020-07-02
+v0.2: 2020-07-02, code optimize, split graph in lower and upper
+v0.9: 2020-10-05, 
+v1.0: 2020-11-20, v1.0 pre-release. NOTE:Use Plain format (not QCAT format, QXDM > Options > Parsing option > QCAT format uncheck)
+v1.0: 2021-01-15, v1.0 official release. Working on QXDM5
+-->
+<!doctype html public "-//w3c//dtd xhtml 1.0 strict//en" "http://www.w3.org/tr/xhtml1/dtd/xhtml1-strict.dtd">
+<html>
+<head>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5" />
+<meta name="DMViewName" content="LG+GraphHz v1.0" />
+<meta name="DMViewWidth" content="5000" />
+<meta name="DMViewHeight" content="2000" />
+<link rel="stylesheet" href="QXDMStyle.css" />
+<style type="text/css">
+th{ text-align : center; padding-left : 3; padding-right : 3; }   
+td{ text-align : center; padding-left : 3; padding-right : 3; }   
+td.shaded{ text-align : center; padding-left : 3; padding-right : 3; cursor : pointer }
+</style>
+</head>
+<body onunload="Unregister()" onload="Register()">
+
+<div id="GRAPH1"><style>#GRAPH1 { height: 350px; width: 100%; }</style></div>
+<div id="GRAPH2"><style>#GRAPH2 { height: 350px; width: 100%; }</style></div>
+<p id="timestamp"></p>
+
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label">Debug Box</div>
+<table width="100%" id="Box">        	
+<tr><th>Time Stamp | Key | Name | Summary</th></tr>
+<tr><td>-</td></tr>
+</table>	    				
+</td.left></tr>
+</table>
+	
+<p id="LG"></p>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/jscript">
+google.charts.load('current', {'packages':['corechart']});
+document.getElementById("LG").innerHTML = "<font color='gray', size=2><center>"+"Copyright by LG Electronics. All Rights Reserved"+"</center></font>";
+
+var IQXDM2;
+var Handle             = 0xFFFFFFFF;
+var UPDATE_MS          = 1000;
+var gMainTickID        = 0;
+var PrevIndex          = -1;
+var SECONDS_PER_DAY = 86400.0;
+var hex = new Array();
+var n;
+var row = 1;
+var ON  = 1;
+var OFF = 0;
+
+var timestamp = "-";
+
+var cnt = 0;
+var TIME_STAMP = new Array();
+
+var NR_VAL = 80;
+var LTE_VAL = 50;
+var LTE_CA_VAL = 40;
+var CDMA_VAL = 30;
+
+var LTE_FREQ = 0;
+var LTE_FREQ_LO = 0;
+var LTE_FREQ_HI = 0;
+var NR_FREQ = 0;
+var NR_FREQ_LO = 0;
+var NR_FREQ_HI = 0;
+
+var LTE_ARFCN = 0;
+var LTE_BW = 0;
+var NR_ARFCN = 0;
+var NR_BW = 0;
+var CDMA_BAND = "";
+var CDMA_CH ="";
+
+var MIN_FREQ = 600;
+var FREQ_RANGE = 2000;
+var FREQ = new Array();
+var SPECTRUM_LTE = new Array();
+var SPECTRUM_NR = new Array();
+var SPECTRUM_1X = new Array();
+for(var i=0; i<=FREQ_RANGE; i++){
+	FREQ[i] = MIN_FREQ +i; //600 ~ 2600 MHz
+	SPECTRUM_LTE[i] = 0;
+	SPECTRUM_NR[i] = 0;
+	SPECTRUM_1X[i] = 0;
+}
+//n2: 1930 MHz - 1990 MHz (60MHz)
+//n5: 869 MHz - 894 MHz (25MHz)
+//n66: 2110 MHz - 2200 MHz (90MHz)
+
+var NW_adding_the = "";
+var LTE_SCELL_IND = "";
+var CDMA_IND = "";
+var QTRACE_0042_00_flag = 0;
+	
+function Register()
+{
+	IQXDM2 = window.external;
+	if (IQXDM2 == null){ window.document.write( "<br />QXDM does not support required interface" ); return; }
+
+	Handle = IQXDM2.RegisterClient( "", 0 );
+	if (Handle == 0xFFFFFFFF){ window.document.write( "<br />Unable to register as client" ); }   
+
+	var clientObject = IQXDM2.ConfigureClientByKeys( Handle );
+	if (clientObject == null){ window.document.write("<br />Failed to get client interface pointer"); return; }
+
+	clientObject.AddMessage(1007,02); 
+	clientObject.AddMessage(9501,02,23); 
+	clientObject.AddQshTrace(42,0,2);
+	clientObject.AddLog(0xB0C2);
+	clientObject.AddLog(0xB825);	
+	//clientObject.AddLog(0xB97F);	
+	
+	clientObject.CommitConfig();     
+	gMainTickID = setInterval( 'ProcessLogs()', UPDATE_MS );  
+}
+
+function Unregister()
+{
+	if (gMainTickID != 0){ window.clearInterval( gMainTickID ); gMainTickID = 0; }
+   	if (Handle != 0xFFFFFFFF){ IQXDM2.UnregisterClient( Handle ); }
+}
+
+function ProcessLogs()
+{   
+	var CurrIndex = IQXDM2.GetClientItemCount( Handle ) - 1;
+	if (PrevIndex > CurrIndex){ PrevIndex = -1; }
+	if (CurrIndex < 0 || CurrIndex == PrevIndex){ return; }  
+
+	   
+	for (var i = PrevIndex + 1; i <= CurrIndex; i++)
+	{
+		var Item = IQXDM2.GetClientItem( Handle, i );
+
+		if (Item != null)
+		{
+			var ItemKey = Item.GetItemKeyText();
+			timestamp =  Item.GetItemSpecificTimestampText( false, true );
+			//Box.rows[row++].cells[0].innerHTML = "<font color='black'>"+timestamp + " "+ ItemKey +"</font>" ; addRow(); //debug message		
+									
+			document.getElementById("timestamp").innerHTML = "<font color='black', size=2><center>"+"Current Timestamp: "+timestamp+"</center></font>";
+
+			if(ItemKey == "[0xB0C2]")
+			{		
+				var messageBody = Item.GetItemParsedText();	
+				var pci =  parseInt(messageBody.split("Physical cell ID =")[1],10) ;
+				var arfcn =   parseInt(messageBody.split("DL FREQ =")[1],10) ;
+				var band =  parseInt(messageBody.split("Freq Band Indicator =")[1],10) ;
+				var bw =  parseInt(messageBody.split("DL Bandwidth =")[1],10) ;								
+				if( (arfcn != 0 && bw != 0) && (LTE_ARFCN != arfcn || LTE_BW != bw) )
+				{					
+					LTE_FREQ = parseInt(LTE_band_Arfcn_to_Freq(band,arfcn),10);					
+					LTE_FREQ_LO = parseInt(LTE_FREQ - bw/2,10);	
+					LTE_FREQ_HI = parseInt(LTE_FREQ + bw/2,10);						
+					var lo = parseInt(LTE_FREQ_LO - MIN_FREQ,10);
+					var hi = parseInt(LTE_FREQ_HI - MIN_FREQ,10);
+					Box.rows[row++].cells[0].innerHTML = "<font color='blue'>"+timestamp + " LTE band:"+ band +" LTE arfcn:"+ arfcn +" LTE bw:"+ bw +" LTE freq:"+ LTE_FREQ + " lo:"+ LTE_FREQ_LO +" hi:"+ LTE_FREQ_HI +"</font>" ; addRow(); //debug message		
+
+					for(var f=lo; f<=hi; f++){ SPECTRUM_LTE[f] = LTE_VAL; }					
+					draw1();
+
+					LTE_ARFCN = arfcn;
+					LTE_BW = bw;					
+				}
+			}
+
+
+			if(ItemKey == "[0xB825]")
+			{
+				var messageBody = Item.GetItemParsedText();	
+				var pci=0;
+				var arfcn=0;
+				var band=0;
+				var bw=0;
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[0\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ 
+					var msg=messageBody.substring(idx+400, idx); 
+					pci = parseInt(msg.split("Cell Id =")[1],10); 
+					arfcn = parseInt(msg.split("DL Arfcn =")[1],10); 
+					band = parseInt(msg.split("Band =")[1],10); 
+					bw = parseInt(msg.split("DL Carrier Bandwidth =")[1].split("BW_")[1].split("Hz")[0],10); 
+
+					if( (arfcn != 0 && bw != 0) && (NR_ARFCN != arfcn || NR_BW != bw) && (band <= 79) ){ //sub6 only
+
+						NR_FREQ = parseInt(NR_Arfcn_to_Freq (arfcn),10); //MHz
+						NR_FREQ_LO = parseInt(NR_FREQ - bw/2,10);	
+						NR_FREQ_HI = parseInt(NR_FREQ + bw/2,10);							
+						var lo = parseInt(NR_FREQ_LO - MIN_FREQ,10);
+						var hi = parseInt(NR_FREQ_HI - MIN_FREQ,10);
+						Box.rows[row++].cells[0].innerHTML = "<font color='red'>"+timestamp + " NR band:"+ band + " NR arfcn:"+ arfcn +" NR bw:"+ bw +" NR freq:"+ NR_FREQ +" lo:"+ NR_FREQ_LO +" hi:"+ NR_FREQ_HI +"</font>" ; addRow(); //debug message		
+
+						for(var f=lo; f<=hi; f++){ SPECTRUM_NR[f] = NR_VAL; }		
+						draw1();
+
+						NR_ARFCN = arfcn;
+						NR_BW = bw;	
+					}	
+				}
+			}
+
+			if(ItemKey == "[09501/02/23]")
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();		
+
+				//[9501/0002/0023]        LTE RRC/High             [ lte_rrc_cap_debug.c   1092] RRC CAP: NW adding the 4dl-1ul CA combo: "66A-66A-2A-2AA", PCell: Band 2.
+				if( summary.indexOf("NW adding the") !=-1 )
+				{					
+					var tmp = summary.split("RRC CAP:")[1];						
+					Box.rows[row++].cells[0].innerHTML = "<font color='black'>"+timestamp + " "+ tmp +"</font>" ; addRow(); //debug message	
+
+					if(NW_adding_the != tmp){ QTRACE_0042_00_flag = 1; }
+					else{ QTRACE_0042_00_flag = 0; }
+					NW_adding_the = tmp;					
+				}
+			}
+
+			if(ItemKey == "[0042/00/2]")
+			{
+				if(QTRACE_0042_00_flag == 1)
+				{
+					//var summary = Item.GetItemSummary();
+					var summary = Item.GetItemParsedText();		
+					
+					//[0042/00/2]              QTRACE                   16:51:13.156             MMODE/STRM/High/CM       [qmi_nas.c  16446] CPHY_CA_IND: scell: pci 280, freq 67236, dl_bandwidth 100, pcell: pci 280, inst_id 0, sub 0
+					//[0042/00/2]              QTRACE                   16:51:13.156             MMODE/STRM/High/CM       [qmi_nas.c  16446] CPHY_CA_IND: scell: pci 280, freq 975, dl_bandwidth 25, pcell: pci 280, inst_id 0, sub 0
+					//[0042/00/2]              QTRACE                   16:51:13.156             MMODE/STRM/High/CM       [qmi_nas.c  16446] CPHY_CA_IND: scell: pci 280, freq 67086, dl_bandwidth 50, pcell: pci 280, inst_id 0, sub 0
+					//[0042/00/2]              QTRACE                   16:51:13.269             MMODE/STRM/High/CM       [qmi_nas.c  16446] CPHY_CA_IND: scell: pci 280, freq 67236, dl_bandwidth 100, pcell: pci 280, inst_id 0, sub 0
+					//[0042/00/2]              QTRACE                   16:51:13.275             MMODE/STRM/High/CM       [qmi_nas.c  16446] CPHY_CA_IND: scell: pci 280, freq 975, dl_bandwidth 25, pcell: pci 280, inst_id 0, sub 0
+					if( summary.indexOf("CPHY_CA_IND: scell:") !=-1 && LTE_SCELL_IND.indexOf(summary) ==-1 )
+					{					
+						var arfcn = parseInt(summary.split("freq")[1],10);	
+						var band = parseInt(LTE_EARFCN_to_Band(arfcn));
+						var rb = parseInt(summary.split("dl_bandwidth")[1],10);
+						var bw = parseInt(LTE_RB_to_BW(rb),10);
+						var freq = parseInt(LTE_band_Arfcn_to_Freq(band,arfcn),10);					
+						var freq_lo = parseInt(freq - bw/2,10);	
+						var freq_hi = parseInt(freq + bw/2,10);						
+						var lo = parseInt(freq_lo - MIN_FREQ,10);
+						var hi = parseInt(freq_hi - MIN_FREQ,10);
+						//Box.rows[row++].cells[0].innerHTML = "<font color='skyblue'>"+timestamp + " "+ summary+"</font>" ; addRow(); //debug message		
+						Box.rows[row++].cells[0].innerHTML = "<font color='gray'>"+timestamp + " LTE band:"+ band +" LTE arfcn:"+ arfcn +" LTE bw:"+ bw +" LTE freq:"+ freq + " lo:"+ freq_lo +" hi:"+ freq_hi +"</font>" ; addRow(); //debug message		
+
+						for(var f=lo; f<=hi; f++){ SPECTRUM_LTE[f] = LTE_CA_VAL; }					
+						draw1();
+
+						LTE_SCELL_IND = LTE_SCELL_IND + summary;
+					}
+				}
+			}
+
+			if(ItemKey == "[01007/02]")
+			{			
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();		
+
+				//[1007/   2]              MSG                      15:34:56.840             Searcher/High            [        srchacq_sm.c   4020] Acq Success was on band=0, chan=283                         Legacy Diag File
+				if( summary.indexOf("Acq Success was on") !=-1 && CDMA_IND.indexOf(summary) ==-1)
+				{	
+					var band = parseInt(summary.split("band=")[1],10);	
+					var ch = parseInt(summary.split("chan=")[1],10);	
+
+					//if( CDMA_BAND != band || CDMA_CH != ch )
+					{					
+						var freq = parseInt(CDMA_band_Channel_to_Freq(band,ch),10);
+						var f = parseInt(freq - MIN_FREQ,10);
+						Box.rows[row++].cells[0].innerHTML = "<font color='orange'>"+timestamp + " "+ summary+"</font>" ; addRow(); //debug message		
+						
+						SPECTRUM_1X[f] = CDMA_VAL;					
+						draw1();
+
+						//CDMA_BAND = band;
+						//CDMA_CH = ch;	
+						CDMA_IND = CDMA_IND + summary
+					}					
+				}
+			}
+		
+			
+		} 
+	}   
+	PrevIndex = CurrIndex;
+}
+
+
+function LTE_RB_to_BW (rb)
+{
+	var bw = 0;
+	/*
+	if(rb == 25){ bw = 5; } 
+	else if(rb == 50){ bw = 10; } 
+	else if(rb == 75){ bw = 15; } 
+	else if(rb == 100){ bw = 20; } 
+	else{ bw = 0; }
+	*/
+	bw = rb/5
+	return bw; //MHz
+}
+
+function NR_Arfcn_to_Freq (arfcn)
+{
+	var F_REF = 0;
+	if(arfcn <= 599999){ 		F_REF = 0 + 0.005 * (arfcn - 0); } //0 - 3000 MHz
+	else if(arfcn <= 2016666){	F_REF = 3000 + 0.015 * (arfcn - 600000); } //3000 - 24250 MHz	
+	else if(arfcn <= 3279167){ 	F_REF = 24250.08 + 0.06 * (arfcn - 2016667); } //24250 - 100000 MHz
+	
+	var F_REF_round = parseFloat(Math.round(F_REF * 100) / 100).toFixed(2);
+	return F_REF_round; //MHz
+}
+
+function LTE_band_Arfcn_to_Freq (band, arfcn)
+{
+	//3GPP 36.101 5.7.3: FDL = FDL_low + 0.1(NDL - NOffs-DL)
+	
+	var FDL_low = 0;
+	var Noffs_DL = 0;
+	
+	if(band == 1){ 			FDL_low = 2110; 	Noffs_DL = 0; } 
+	else if(band == 2){		FDL_low = 1930; 	Noffs_DL = 600;  } 
+	else if(band == 3){ 	FDL_low = 1805; 	Noffs_DL = 1200;  } 
+	else if(band == 4){ 	FDL_low = 2110; 	Noffs_DL = 1950;  }  
+	else if(band == 5){ 	FDL_low =  869; 	Noffs_DL = 2400;  } 
+	else if(band == 6){ 	FDL_low =  875; 	Noffs_DL = 2650;  } 
+	else if(band == 7){ 	FDL_low = 2620; 	Noffs_DL = 2750;  } 
+	else if(band == 8){ 	FDL_low =  925; 	Noffs_DL = 3450;  }
+	else if(band == 9){ 	FDL_low = 1844.9; 	Noffs_DL = 3800;  }
+	else if(band == 10){ 	FDL_low = 2110; 	Noffs_DL = 4150;  } 
+	else if(band == 11){ 	FDL_low = 1475.9; 	Noffs_DL = 4750;  } 
+	else if(band == 12){ 	FDL_low =  729; 	Noffs_DL = 5010;  }
+	else if(band == 13){ 	FDL_low =  746; 	Noffs_DL = 5180;  }
+	else if(band == 14){ 	FDL_low =  758; 	Noffs_DL = 5280;  } 
+	
+	else if(band == 17){ 	FDL_low =  734   ; 	Noffs_DL = 5730 ; } 
+	else if(band == 18){ 	FDL_low =  860   ; 	Noffs_DL = 5850 ; } 
+	else if(band == 19){ 	FDL_low =  875   ; 	Noffs_DL = 6000 ; } 
+	else if(band == 20){ 	FDL_low =  791   ; 	Noffs_DL = 6150 ; } 
+	else if(band == 21){ 	FDL_low =  1495.9; 	Noffs_DL = 6450 ; } 
+	else if(band == 22){ 	FDL_low =  3510  ; 	Noffs_DL = 6600 ; } 
+	else if(band == 23){ 	FDL_low =  2180  ; 	Noffs_DL = 7500 ; } 
+	else if(band == 24){ 	FDL_low =  1525  ; 	Noffs_DL = 7700 ; } 
+	else if(band == 25){ 	FDL_low =  1930  ; 	Noffs_DL = 8040 ; } 
+	else if(band == 26){ 	FDL_low =  859   ; 	Noffs_DL = 8690 ; } 
+	else if(band == 27){ 	FDL_low =  852   ; 	Noffs_DL = 9040 ; } 
+	else if(band == 28){ 	FDL_low =  758   ; 	Noffs_DL = 9210 ; } 
+	else if(band == 29){ 	FDL_low =  717   ; 	Noffs_DL = 9660 ; } 
+	else if(band == 30){ 	FDL_low =  2350  ; 	Noffs_DL = 9770 ; } 
+	else if(band == 31){ 	FDL_low =  462.5 ; 	Noffs_DL = 9870 ; } 
+	else if(band == 32){ 	FDL_low =  1452  ; 	Noffs_DL = 9920 ; } 
+	else if(band == 33){ 	FDL_low =  1900  ; 	Noffs_DL = 36000; } 
+	else if(band == 34){ 	FDL_low =  2010  ; 	Noffs_DL = 36200; } 
+	else if(band == 35){ 	FDL_low =  1850  ; 	Noffs_DL = 36350; } 
+	else if(band == 36){ 	FDL_low =  1930  ; 	Noffs_DL = 36950; } 
+	else if(band == 37){ 	FDL_low =  1910  ; 	Noffs_DL = 37550; } 
+	else if(band == 38){ 	FDL_low =  2570  ; 	Noffs_DL = 37750; } 
+	else if(band == 39){ 	FDL_low =  1880  ; 	Noffs_DL = 38250; } 
+	else if(band == 40){ 	FDL_low =  2300  ; 	Noffs_DL = 38650; } 
+	else if(band == 41){ 	FDL_low =  2496  ; 	Noffs_DL = 39650; } 
+	else if(band == 42){ 	FDL_low =  3400  ; 	Noffs_DL = 41590; } 
+	else if(band == 43){ 	FDL_low =  3600  ; 	Noffs_DL = 43590; } 
+	else if(band == 44){ 	FDL_low =  703   ; 	Noffs_DL = 45590; } 
+	else if(band == 45){ 	FDL_low =  1447  ; 	Noffs_DL = 46590; } 
+	else if(band == 46){ 	FDL_low =  5150  ; 	Noffs_DL = 46790; } 
+	else if(band == 47){ 	FDL_low =  5855  ; 	Noffs_DL = 54540; } 
+	else if(band == 48){ 	FDL_low =  3550  ; 	Noffs_DL = 55240; } 
+	else if(band == 49){ 	FDL_low =  3550  ; 	Noffs_DL = 56740; } 
+	else if(band == 50){ 	FDL_low =  1432  ; 	Noffs_DL = 58240; } 
+	else if(band == 51){ 	FDL_low =  1427  ; 	Noffs_DL = 59090; } 
+	else if(band == 52){ 	FDL_low =  3300  ; 	Noffs_DL = 59140; } 
+	                                                             
+	else if(band == 65){ 	FDL_low = 2110; 	Noffs_DL = 65536;  } 
+	else if(band == 66){ 	FDL_low = 2110; 	Noffs_DL = 66436;  } 
+	else if(band == 67){ 	FDL_low = 738 ; 	Noffs_DL = 67336;  } 
+	else if(band == 68){ 	FDL_low = 753 ; 	Noffs_DL = 67536;  } 
+	else if(band == 69){ 	FDL_low = 2570; 	Noffs_DL = 67836;  } 
+	else if(band == 70){ 	FDL_low = 1995; 	Noffs_DL = 68336;  } 
+	else if(band == 71){ 	FDL_low = 617 ; 	Noffs_DL = 68586;  } 
+	else if(band == 72){ 	FDL_low = 461 ; 	Noffs_DL = 68936;  } 
+	else if(band == 73){ 	FDL_low = 460 ; 	Noffs_DL = 68986;  } 
+	else if(band == 74){ 	FDL_low = 1475; 	Noffs_DL = 69036;  } 
+	else if(band == 75){ 	FDL_low = 1432; 	Noffs_DL = 69466;  } 
+	else if(band == 76){ 	FDL_low = 1427; 	Noffs_DL = 70316;  } 
+	                                                             
+	else if(band == 85){ 	FDL_low =  728; 	Noffs_DL = 70366;  } 
+	
+	var FDL = FDL_low + (0.1 * (arfcn - Noffs_DL)); 
+	var F_REF_round = parseFloat(Math.round(FDL * 100) / 100).toFixed(2);
+	return F_REF_round; //MHz
+}
+
+function LTE_EARFCN_to_Band (arfcn)
+{
+
+	if(arfcn <= 599){			return 1; } //fdd
+	else if(arfcn <= 1199){		return 2; }
+	else if(arfcn <= 1949){		return 3; }
+	else if(arfcn <= 2399){		return 4; }
+	else if(arfcn <= 2649){		return 5; }
+	else if(arfcn <= 2749){		return 6; }
+	else if(arfcn <= 3449){		return 7; }
+	else if(arfcn <= 3799){		return 8; }
+	else if(arfcn <= 4149){		return 9; }
+	else if(arfcn <= 4749){		return 10; }
+	else if(arfcn <= 4949){		return 11; }
+	else if(arfcn <= 5179){ 	return 12; }
+	else if(arfcn <= 5279){		return 13; }
+	else if(arfcn <= 5379){		return 14; }
+	else if(arfcn <= 5849){		return 17; }
+	else if(arfcn <= 5999){		return 18; }
+	else if(arfcn <= 6149){		return 19; }
+	else if(arfcn <= 6449){		return 20; }
+	else if(arfcn <= 6599){		return 21; }
+	else if(arfcn <= 7399){		return 22; }
+	else if(arfcn <= 7699){ 	return 23; }
+	else if(arfcn <= 8039){ 	return 24; }
+	else if(arfcn <= 8689){ 	return 25; }
+	else if(arfcn <= 9039){ 	return 26; }
+	else if(arfcn <= 9209){ 	return 27; }
+	else if(arfcn <= 9659){ 	return 28; }
+	else if(arfcn <= 9769){ 	return 29; }
+	else if(arfcn <= 9869){ 	return 30; }
+	else if(arfcn <= 9919){ 	return 31; }
+	else if(arfcn <= 10359){ 	return 32; }
+	else if(arfcn >= 36000 && arfcn <= 36199){		return 33; } //tdd
+	else if(arfcn <= 36349){ 	return 34; }
+	else if(arfcn <= 36949){ 	return 35; }
+	else if(arfcn <= 37549){ 	return 36; }
+	else if(arfcn <= 37749){ 	return 37; }
+	else if(arfcn <= 38249){ 	return 38; }
+	else if(arfcn <= 38649){ 	return 39; }
+	else if(arfcn <= 39649){ 	return 40; }
+	else if(arfcn <= 41589){ 	return 41; }
+	else if(arfcn <= 43589){ 	return 42; }
+	else if(arfcn <= 45589){ 	return 43; }
+	else if(arfcn <= 46589){ 	return 44; }
+	else if(arfcn <= 46789){ 	return 45; }
+	else if(arfcn <= 54539){ 	return 46; }
+	else if(arfcn <= 55239){	return 47; }
+	else if(arfcn <= 56739){ 	return 48; }
+	else if(arfcn <= 58239){	return 49; }
+	else if(arfcn <= 59089){ 	return 50; }
+	else if(arfcn <= 59139){ 	return 51; }
+	else if(arfcn <= 60139){ 	return 52; }
+	else if(arfcn >= 65536 && arfcn <= 66435){		return 65; } //fdd
+	else if(arfcn <= 67335){ 	return 66; }
+	else if(arfcn <= 67535){ 	return 67; }
+	else if(arfcn <= 67835){ 	return 68; }
+	else if(arfcn <= 68335){ 	return 69; }
+	else if(arfcn <= 68585){ 	return 70; }
+	else if(arfcn <= 68935){ 	return 71; }
+	else if(arfcn <= 68985){ 	return 72; }
+	else if(arfcn <= 69035){	return 73; }
+	else if(arfcn <= 69465){ 	return 74; }
+	else if(arfcn <= 70315){	return 75; }
+	else if(arfcn <= 70365){	return 76; }
+	else if(arfcn <= 70545){ 	return 85; }
+	else{ 						return 0; } //not found
+}
+
+function CDMA_band_Channel_to_Freq (band, channel)
+{
+	var base = 0;
+	var offset = 0;
+	
+	if(band == 0){ //800
+		if(channel <= 799){ 		base=870;	offset = 0;  }
+		else if(channel <= 1023){ 	base=870;	offset = 1023;   }
+		else if(channel <= 1323){ 	base=860;	offset = 1024;   }
+		else if(channel <= 1424){ 	base=866.01;	offset = 1324;   }
+
+		return base + (0.03 * (channel-offset));
+	}
+	else if(band == 1){ //1900 PCS
+		if(channel <= 1199){ 		base=1930;	offset = 0;  }
+
+		return base + (0.05 * (channel-offset));
+	}
+	return 0;	
+}
+
+/*
+function draw1() 
+{
+	var data=[];
+	var Header= ['Hz', '4G', '5G', '1X'];
+	data.push(Header);	
+
+	for (var i = 0; i <=FREQ_RANGE; i++) 
+	{
+		var temp=[];
+		temp.push(FREQ[i]);
+		temp.push(SPECTRUM_LTE[i]);
+		temp.push(SPECTRUM_NR[i]);
+		temp.push(SPECTRUM_1X[i]);
+		data.push(temp);
+	}
+	var data = google.visualization.arrayToDataTable(data);
+
+	var options = {
+		title: 'SPECTRUM ALLOCATION',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'Frequency [MHz]'},
+        chartArea: {width:'85%'},
+        pointSize: 5,
+		};
+
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH1'));
+	chart.draw(data, options);
+}
+*/
+
+function draw1() 
+{
+	var data=[];
+	var Header= ['Hz', '4G', '5G', '1X'];
+	data.push(Header);	
+
+	for (var i = 0; i <=FREQ_RANGE/2; i++) 
+	{
+		var temp=[];
+		temp.push(FREQ[i]);
+		temp.push(SPECTRUM_LTE[i]);
+		temp.push(SPECTRUM_NR[i]);
+		temp.push(SPECTRUM_1X[i]);
+		data.push(temp);
+	}
+	var data = google.visualization.arrayToDataTable(data);
+
+	var options = {
+		title: 'SPECTRUM ALLOCATION',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'Frequency [MHz]'},
+        chartArea: {width:'85%'},
+        pointSize: 5,
+		};
+
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH1'));
+	chart.draw(data, options);
+
+
+	var data=[];
+	var Header= ['Hz', '4G', '5G', '1X'];
+	data.push(Header);	
+
+	for (var i = parseInt(FREQ_RANGE/2,10); i <=FREQ_RANGE; i++) 
+	{
+		var temp=[];
+		temp.push(FREQ[i]);
+		temp.push(SPECTRUM_LTE[i]);
+		temp.push(SPECTRUM_NR[i]);
+		temp.push(SPECTRUM_1X[i]);
+		data.push(temp);
+	}
+	var data = google.visualization.arrayToDataTable(data);
+
+	var options = {
+		curveType: 'function',
+		hAxis: {title: 'Frequency [MHz]'},
+        chartArea: {width:'85%'},
+        pointSize: 5,
+		};
+
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH2'));
+	chart.draw(data, options);
+}
+
+
+function addRow(){ var Box_row = Box.insertRow(Box.rows.length); var cell = Box_row.insertCell(); cell.innerHTML = "<td>-</td>"; }
+function timestamp_in_sec()
+{
+	var split = timestamp.split(":");
+	var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) +(parseFloat( parseInt(split[2].split(".")[1],10) / 1000)); //unit of seconds
+	return timestamp_sec_unit;		
+}
+
+</script>
+</body>
+</html>
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, SeoDL, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+

@@ -1,0 +1,1030 @@
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+<!-- #Version History::LT+TableCA.html
+v0.1: 2020-06-11, Beta version initial release
+v0.2: 2020-06-18, fix timestamp_in_sec() and change a day 11:59PM to 12:00AM
+v0.3: 2020-06-19, fix B883 for corner case
+v0.4: 2020-06-25, fix B825
+v0.5: 2020-06-26, fix B825 to support old version
+v0.6: fix issue of time reverse case
+v0.9: 2020-10-05, released v0.9
+v1.0: 2020-11-17, v1.0 pre-release. NOTE:Use Plain format (not QCAT format, QXDM > Options > Parsing option > QCAT format uncheck) 
+v1.0: 2020-11-20, v1.0 pre-release. Sometime event-2728 is missed in the log. Just in case, use OTA msg. 
+v1.0: 2021-01-15, v1.0 official release. Working on QXDM5
+-->
+<!doctype html public "-//w3c//dtd xhtml 1.0 strict//en" "http://www.w3.org/tr/xhtml1/dtd/xhtml1-strict.dtd">
+<html>
+<head>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5" />
+<meta name="DMViewName" content="LG+TableCA v1.0" />
+<meta name="DMViewWidth" content="5000" />
+<meta name="DMViewHeight" content="2000" />
+<link rel="stylesheet" href="QXDMStyle.css" />
+<style type="text/css">
+th{ text-align : center; padding-left : 3; padding-right : 3; }   
+td{ text-align : center; padding-left : 3; padding-right : 3; }   
+td.shaded{ text-align : center; padding-left : 3; padding-right : 3; cursor : pointer }
+</style>
+</head>
+<body onunload="Unregister()" onload="Register()">
+
+<label>Sampling:</label><input type="text" size="1" id="samplingInput" value="0.1" /><label>sec</label>
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label"></div>
+<table width="100%" id="TBL1">
+<tr><th colspan=1>File name</th><td colspan=25>-</td></tr>
+<tr><th colspan=1>CA configuration</th><td colspan=25>-</td></tr>
+<tr><th colspan=1>CA DB:</th><td colspan=25>-</td></tr>			
+<tr>	  
+<th colspan=5>NW info</th>
+<th colspan=2>Signal</th>
+<th colspan=2>CSF</th>
+<th colspan=7>Downlink</th>
+<th colspan=7>Uplink</th>	  
+</tr>
+<tr>
+<th colspan=1>State</th>
+<th colspan=1>NW Band</th>
+<th colspan=1>BW</th>
+<th colspan=1>ARFCN</th>
+<th colspan=1>PCI</th>				  
+<th colspan=1>RSRP</th>
+<th colspan=1>RSRQ</th>
+<th colspan=1>CQI</th>
+<th colspan=1>RI</th>
+<th colspan=1>MCS</th>
+<th colspan=1>BLER%</th>
+<th colspan=1>Layer</th>
+<th colspan=1>RBs</th>
+<th colspan=1>Modulation</th>			  
+<th colspan=1>PHY TPUT per cc</th>
+<th colspan=1>LTE PHY</th>	
+<th colspan=1>MCS</th>
+<th colspan=1>BLER%</th>
+<th colspan=1>Layer</th>
+<th colspan=1>RBs</th>
+<th colspan=1>Modulation</th>			  
+<th colspan=1>PHY TPUT per CC</th>
+<th colspan=1>LTE PHY</th>		
+</tr>        		
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>         <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td rowspan=3>-</td> </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>LTE RLC</th>   <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>                      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>         <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>                      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>LTE PDCP</th>  <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <th>LTE IPA</th>     </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>         <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td rowspan=3>-</td> </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>LTE IPA</th>   <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>                      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>         <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>                      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR PHY</th>    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <th>NR PHY</th>      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>         <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td rowspan=3>-</td> </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR RLC</th>    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>                      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>         <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>                      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR PDCP</th>   <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <th>NR IPA</th>      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>         <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td rowspan=3>-</td> </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR IPA</th>    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>                      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>         <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>                      </tr>
+</table>	    				
+</td.left></tr>
+</table>
+<p id="timestamp"></p>
+
+<select id="chkDL" style="width: 100px">
+<option value='0'>No capture</option>
+<option value='1' selected>DL IPA Peak</option>
+<option value='2'>DL LTE Peak</option>
+<option value='3'>DL NR Peak</option>
+</select>
+<label>Threshold:</label><input type="text" size="8" id="thDL" value="10000" /><label>Kbps</label>
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label" ></div>
+<table width="62.5%" id="TBL2">
+<tr><th colspan=1>File name</th><td colspan=15>-</td></tr>
+<tr><th colspan=1>CA configuration</th><td colspan=15>-</td></tr>
+<tr><th colspan=1>CA DB:</th><td colspan=15>-</td></tr>			
+<tr>	  
+<th colspan=5>NW info</th>
+<th colspan=2>Signal</th>
+<th colspan=2>CSF</th>
+<th colspan=7>Downlink</th>
+</tr>
+<tr>
+<th colspan=1>State</th>
+<th colspan=1>NW Band</th>
+<th colspan=1>BW</th>
+<th colspan=1>ARFCN</th>
+<th colspan=1>PCI</th>				  
+<th colspan=1>RSRP</th>
+<th colspan=1>RSRQ</th>
+<th colspan=1>CQI</th>
+<th colspan=1>RI</th>	
+<th colspan=1>MCS</th>
+<th colspan=1>BLER%</th>
+<th colspan=1>Layer</th>
+<th colspan=1>RBs</th>
+<th colspan=1>Modulation</th>			  
+<th colspan=1>PHY TPUT per cc</th>
+<th colspan=1>LTE PHY</th>	
+</tr>        		
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>            </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>LTE RLC</th>      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>            </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>LTE PDCP</th>     </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>            </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>LTE IPA</th>      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>            </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR PHY</th>       </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>            </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR RLC</th>       </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>            </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR PDCP</th>      </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>            </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR IPA</th>       </tr>
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td>-</td>            </tr>
+</table>	    				
+</td.left></tr>
+</table>
+<p id="timestamp_maxdl"></p>
+
+<select id="chkUL" style="width: 100px">
+<option value='0'>No capture</option>
+<option value='1' selected>UL IPA Peak</option>
+<option value='2'>UL LTE Peak</option>
+<option value='3'>UL NR Peak</option>
+</select>
+<label>Threshold:</label><input type="text" size="8" id="thUL" value="10000" /><label>Kbps</label>
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label"></div>
+<table width="62.5%" id="TBL3">
+<tr><th colspan=1>File name</th><td colspan=18>-</td></tr>
+<tr><th colspan=1>CA configuration</th><td colspan=18>-</td></tr>
+<tr><th colspan=1>CA DB:</th><td colspan=18>-</td></tr>			
+<tr>	  
+<th colspan=5>NW info</th>
+<th colspan=2>Signal</th>
+<th colspan=2>CSF</th>
+<th colspan=7>Uplink</th>
+</tr>
+<tr>
+<th colspan=1>State</th>
+<th colspan=1>NW Band</th>
+<th colspan=1>BW</th>
+<th colspan=1>ARFCN</th>
+<th colspan=1>PCI</th>				  
+<th colspan=1>RSRP</th>
+<th colspan=1>RSRQ</th>
+<th colspan=1>CQI</th>
+<th colspan=1>RI</th>	
+<th colspan=1>MCS</th>
+<th colspan=1>BLER%</th>
+<th colspan=1>Layer</th>
+<th colspan=1>RBs</th>
+<th colspan=1>Modulation</th>			  
+<th colspan=1>PHY TPUT per cc</th>
+<th colspan=1>LTE PHY</th>	
+</tr>        		
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td rowspan=3>-</td> </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td>                      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td>                      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>LTE IPA</th>     </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td rowspan=3>-</td> </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td>                      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td>                      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR PHY</th>      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td rowspan=3>-</td> </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td>                      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td>                      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <th>NR IPA</th>      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td> <td rowspan=3>-</td> </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td>                      </tr> 
+<tr> <td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td> <td>-</td><td>-</td>                      </tr> 
+</table>	    				
+</td.left></tr>
+</table>
+<p id="timestamp_maxul"></p>
+
+
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label">Debug Box</div>
+<table width="100%" id="Box">        	
+<tr><th>Time Stamp | Key | Name | Summary</th></tr>
+<tr><td>-</td></tr>
+</table>	    				
+</td.left></tr>
+</table>
+
+	
+<p id="LG"></p>
+<script type="text/jscript">
+document.getElementById("LG").innerHTML = "<font color='gray', size=2><center>"+"Copyright by LG Electronics. All Rights Reserved"+"</center></font>";
+
+var IQXDM2;
+var Handle             = 0xFFFFFFFF;
+var UPDATE_MS          = 1000;
+var gMainTickID        = 0;
+var PrevIndex          = -1;
+var SECONDS_PER_DAY = 86400.0;
+var hex = new Array();
+var n;
+var row = 1;
+var ON  = 1;
+var OFF = 0;
+
+var timestamp = "-";
+var timestamp_sec = 0; var timestamp_sec_p = 0;
+var timestamp_maxdl=0; var timestamp_maxul=0;
+
+// table row index
+var tblrow = 0;
+var FileName = tblrow;
+var CAcfg = ++tblrow;;
+var CADB = ++tblrow;
+++tblrow; ++tblrow;
+var LTEcell0 = ++tblrow; var LTEPHYTot = LTEcell0; 
+var LTEcell1 = ++tblrow;
+var LTEcell2 = ++tblrow; var LTERLCTot = LTEcell2;
+var LTEcell3 = ++tblrow;
+var LTEcell4 = ++tblrow; var LTEPDCPTot = LTEcell4;
+var LTEcell5 = ++tblrow;
+var LTEcell6 = ++tblrow; var LTEIPATot = LTEcell6;
+var NRcell0 = ++tblrow;
+var NRcell1 = ++tblrow; var NRPHYTot = NRcell1;
+var NRcell2 = ++tblrow;
+var NRcell3 = ++tblrow; var NRRLCTot = NRcell3;
+var NRcell4 = ++tblrow;
+var NRcell5 = ++tblrow; var NRPDCPTot = NRcell5;
+var NRcell6 = ++tblrow;
+var NRcell7 = ++tblrow; var NRIPATot = NRcell7;
+
+// table column index
+var tblcol = 0;
+var Scell_state = tblcol; var Band_idx = ++tblcol; var BW_idx = ++tblcol; var ARFCN_idx = ++tblcol; var PCI_idx = ++tblcol; 
+var RSRP_idx = ++tblcol; var RSRQ_idx = ++tblcol;
+//var Beam_num_idx = ++tblcol; var Beam_ID_idx = ++tblcol; var Beam_QTM_idx = ++tblcol; //var Thermal_idx = ++tblcol;
+var CQI_idx = ++tblcol; var RI_idx = ++tblcol;
+//var Pathloss_idx = ++tblcol; var TxPower_idx = ++tblcol; var PHR_idx = ++tblcol; var MTPL_idx = ++tblcol;
+var MCS_idx = ++tblcol; var BLER_idx = ++tblcol; var Layer_idx = ++tblcol; var RB_idx = ++tblcol; var Mod_idx = ++tblcol; var PHYT_idx = ++tblcol; var PDCPT_idx = ++tblcol;
+//var ULBW_idx = ++tblcol; var ULARFCN_idx = ++tblcol;
+var UL_MCS_idx = ++tblcol; var UL_BLER_idx = ++tblcol; var UL_Layer_idx = ++tblcol; var UL_RB_idx = ++tblcol; var UL_Mod_idx = ++tblcol; var UL_PHYT_idx = ++tblcol; var UL_PDCPT_idx = ++tblcol;
+
+// global variables
+var NW_adding_the = 0;
+var NRPHY=0; var NRIPA=0; var LTEPHY=0; var LTEIPA=0; var MAXDL=0; 
+var NRULPHY=0; var NRULIPA=0; var LTEULPHY=0; var LTEULIPA=0;var MAXUL=0;
+var RANGE_DL=10000000; //10Gbps
+var RANGE_UL=2000000; //2Gbps
+var LTE_arfcn = new Array();
+
+// trigger and flag
+var B16D_trig = 0;
+var B173_trig = 0;
+var B883_trig = 0;
+var B887_trig = 0;
+var B97F_trig = 0;
+
+function Register()
+{
+	IQXDM2 = window.external;
+	if (IQXDM2 == null){ window.document.write( "<br />QXDM does not support required interface" ); return; }
+
+	Handle = IQXDM2.RegisterClient( "", 0 );
+	if (Handle == 0xFFFFFFFF){ window.document.write( "<br />Unable to register as client" ); }   
+
+	var clientObject = IQXDM2.ConfigureClientByKeys( Handle );
+	if (clientObject == null){ window.document.write("<br />Failed to get client interface pointer"); return; }
+
+	clientObject.AddString(0000); 	
+
+	clientObject.AddMessage(9501,02,23); //NE adding the	
+	//--clientObject.AddQshTrace(61,1,2); //-- Can't use this packet due to very heavy log size	
+	clientObject.AddLog(0xB0C2); //LTE Pcell information
+	clientObject.AddEvent(2728); //EVENT_LTE_SCELL_STATE_CHANGE_ENHANCED3 
+	//--clientObject.AddEvent(2242); //EVENT_SCELL_STATE_CHANGE_INTERNAL
+	clientObject.AddQshTrace(42,0,2); //LTE Scell BW
+	clientObject.AddLog(0xB0C0,26,9,0); //LTE RRC OTA
+	clientObject.AddLog(0xB825); //NR RRC config
+	clientObject.AddEvent(3252);	
+	
+	clientObject.AddLog(0xB193); //LTE RSRP
+	clientObject.AddLog(0xB97F); //NR RSRP
+	clientObject.AddQshTrace(76,4,0); //QSH ANALYSIS
+	clientObject.AddQshTrace(76,4,2); //QSH ANALYSIS
+	
+	clientObject.AddLog(0xB14E); //LTE CQI,RI
+	clientObject.AddLog(0xB8A7); //NR CQI,RI
+	clientObject.AddLog(0xB173); //LTE DL Layer,Mod
+	clientObject.AddLog(0xB887); //NR DL layer,Mod	
+	clientObject.AddLog(0xB16D); //LTE UL layer,Mod	
+	clientObject.AddLog(0xB883); //NR UL layer,Mod	
+	
+	//clientObject.AddLog(0xB16E);	
+	//clientObject.AddLog(0xB8D2); 
+	//clientObject.AddEvent(3184);
+	//clientObject.AddQshTrace(13,0,2);	
+	//clientObject.AddEvent(1938); //EVENT_LTE_ML1_PHR_REPORT
+	
+	clientObject.CommitConfig();     
+	gMainTickID = setInterval( 'ProcessLogs()', UPDATE_MS );  
+}
+
+function Unregister()
+{
+	if (gMainTickID != 0){ window.clearInterval( gMainTickID ); gMainTickID = 0; }
+   	if (Handle != 0xFFFFFFFF){ IQXDM2.UnregisterClient( Handle ); }
+}
+
+function ProcessLogs()
+{   
+	var CurrIndex = IQXDM2.GetClientItemCount( Handle ) - 1;
+	if (PrevIndex > CurrIndex){ PrevIndex = -1; }
+	if (CurrIndex < 0 || CurrIndex == PrevIndex){ return; }     
+	for (var i = PrevIndex + 1; i <= CurrIndex; i++)
+	{
+		var Item = IQXDM2.GetClientItem( Handle, i );
+		if (Item != null)
+		{
+			var ItemKey = Item.GetItemKeyText();
+			timestamp =  Item.GetItemSpecificTimestampText( false, true );	
+			timestamp_sec = timestamp_in_sec();			
+			//Box.rows[row++].cells[0].innerHTML = timestamp +" "+ ItemKey ; addRow();//debug message
+
+			if(ItemKey == "[0]"){ 
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();		
+				if( summary.indexOf("isf") !=-1 ){ TBL1.rows[0].cells[1].innerHTML = summary ; }
+			}
+			else if(timestamp_sec - timestamp_sec_p >= samplingInput.value || timestamp_sec - timestamp_sec_p < -10){ //read log packets at every sampling interval (second)
+				timestamp_sec_p = timestamp_sec; 				
+				B97F_trig = 1; //NR RSRP
+				B173_trig = 1; //LTE PDSCH
+				B887_trig = 1; //NR PDSCH
+				B16D_trig = 1; //LTE PUSCH
+				B883_trig = 1; //NR UL
+				document.getElementById("timestamp").innerHTML = "<font color='black', size=1><center>"+"Current Timestamp: "+timestamp+"</center></font>";
+			}
+
+			if(ItemKey == "[09501/02/23]")
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText(); 
+				if(summary.indexOf("NW adding the") !=-1){ TBL1.rows[CAcfg].cells[1].innerHTML = summary.split("RRC CAP:")[1]; }
+				if(summary.indexOf("CA_DB: **") !=-1){ TBL1.rows[CADB].cells[1].innerHTML = summary.split("CA_DB:")[1]; }
+			}
+
+			if(ItemKey == "[0xB0C2]") //LTE Pcell info
+			{				
+				var messageBody = Item.GetItemParsedText();
+				TBL1.rows[LTEcell0].cells[PCI_idx].innerHTML = parseInt(messageBody.split("Physical cell ID =")[1],10); TBL1.rows[LTEcell0].cells[ARFCN_idx].innerHTML = parseInt(messageBody.split("DL FREQ =")[1],10); TBL1.rows[LTEcell0].cells[Band_idx].innerHTML = "B"+parseInt(messageBody.split("Freq Band Indicator =")[1],10); TBL1.rows[LTEcell0].cells[BW_idx].innerHTML = parseInt(messageBody.split("DL Bandwidth =")[1],10)+"MHz"; TBL1.rows[LTEcell0].cells[Scell_state].innerHTML = messageBody.split("Allowed Access =")[1].split("}")[0]; 	
+			}
+			
+			if(ItemKey == "[02728]") //LTE Scell info, state display only if "Active" and "Not Configured"
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();				
+				if(summary.search(new RegExp("Scell Index\\s+=\\s+1",'g')) >0){ TBL1.rows[LTEcell1].cells[PCI_idx].innerHTML = parseInt(summary.split("Cell ID =")[1],10); TBL1.rows[LTEcell1].cells[ARFCN_idx].innerHTML = parseInt(summary.split("EARFCN =")[1],10); TBL1.rows[LTEcell1].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(summary.split("EARFCN =")[1],10)); if(summary.split("To State =")[1].split("From")[0].indexOf(" Active")!=-1 || summary.split("To State =")[1].split("From")[0].indexOf("Not Configured")!=-1){TBL1.rows[LTEcell1].cells[Scell_state].innerHTML = summary.split("To State =")[1].split("From")[0];} LTE_arfcn[LTEcell1]=parseInt(summary.split("EARFCN =")[1],10); }
+				if(summary.search(new RegExp("Scell Index\\s+=\\s+2",'g')) >0){ TBL1.rows[LTEcell2].cells[PCI_idx].innerHTML = parseInt(summary.split("Cell ID =")[1],10); TBL1.rows[LTEcell2].cells[ARFCN_idx].innerHTML = parseInt(summary.split("EARFCN =")[1],10); TBL1.rows[LTEcell2].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(summary.split("EARFCN =")[1],10)); if(summary.split("To State =")[1].split("From")[0].indexOf(" Active")!=-1 || summary.split("To State =")[1].split("From")[0].indexOf("Not Configured")!=-1){TBL1.rows[LTEcell2].cells[Scell_state].innerHTML = summary.split("To State =")[1].split("From")[0];} LTE_arfcn[LTEcell2]=parseInt(summary.split("EARFCN =")[1],10); }
+				if(summary.search(new RegExp("Scell Index\\s+=\\s+3",'g')) >0){ TBL1.rows[LTEcell3].cells[PCI_idx].innerHTML = parseInt(summary.split("Cell ID =")[1],10); TBL1.rows[LTEcell3].cells[ARFCN_idx].innerHTML = parseInt(summary.split("EARFCN =")[1],10); TBL1.rows[LTEcell3].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(summary.split("EARFCN =")[1],10)); if(summary.split("To State =")[1].split("From")[0].indexOf(" Active")!=-1 || summary.split("To State =")[1].split("From")[0].indexOf("Not Configured")!=-1){TBL1.rows[LTEcell3].cells[Scell_state].innerHTML = summary.split("To State =")[1].split("From")[0];} LTE_arfcn[LTEcell3]=parseInt(summary.split("EARFCN =")[1],10); }
+				if(summary.search(new RegExp("Scell Index\\s+=\\s+4",'g')) >0){ TBL1.rows[LTEcell4].cells[PCI_idx].innerHTML = parseInt(summary.split("Cell ID =")[1],10); TBL1.rows[LTEcell4].cells[ARFCN_idx].innerHTML = parseInt(summary.split("EARFCN =")[1],10); TBL1.rows[LTEcell4].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(summary.split("EARFCN =")[1],10)); if(summary.split("To State =")[1].split("From")[0].indexOf(" Active")!=-1 || summary.split("To State =")[1].split("From")[0].indexOf("Not Configured")!=-1){TBL1.rows[LTEcell4].cells[Scell_state].innerHTML = summary.split("To State =")[1].split("From")[0];} LTE_arfcn[LTEcell4]=parseInt(summary.split("EARFCN =")[1],10); }
+				if(summary.search(new RegExp("Scell Index\\s+=\\s+5",'g')) >0){ TBL1.rows[LTEcell5].cells[PCI_idx].innerHTML = parseInt(summary.split("Cell ID =")[1],10); TBL1.rows[LTEcell5].cells[ARFCN_idx].innerHTML = parseInt(summary.split("EARFCN =")[1],10); TBL1.rows[LTEcell5].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(summary.split("EARFCN =")[1],10)); if(summary.split("To State =")[1].split("From")[0].indexOf(" Active")!=-1 || summary.split("To State =")[1].split("From")[0].indexOf("Not Configured")!=-1){TBL1.rows[LTEcell5].cells[Scell_state].innerHTML = summary.split("To State =")[1].split("From")[0];} LTE_arfcn[LTEcell5]=parseInt(summary.split("EARFCN =")[1],10); }
+				if(summary.search(new RegExp("Scell Index\\s+=\\s+6",'g')) >0){ TBL1.rows[LTEcell6].cells[PCI_idx].innerHTML = parseInt(summary.split("Cell ID =")[1],10); TBL1.rows[LTEcell6].cells[ARFCN_idx].innerHTML = parseInt(summary.split("EARFCN =")[1],10); TBL1.rows[LTEcell6].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(summary.split("EARFCN =")[1],10)); if(summary.split("To State =")[1].split("From")[0].indexOf(" Active")!=-1 || summary.split("To State =")[1].split("From")[0].indexOf("Not Configured")!=-1){TBL1.rows[LTEcell6].cells[Scell_state].innerHTML = summary.split("To State =")[1].split("From")[0];} LTE_arfcn[LTEcell6]=parseInt(summary.split("EARFCN =")[1],10); }
+			}
+
+			if(ItemKey == "[0042/00/2]") //LTE Scell info, BW
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();				
+				if(summary.indexOf("CPHY_CA_IND: scell: pci") !=-1 ){					
+					var arfcn = parseInt(summary.split("freq")[1],10);	
+					if(arfcn==LTE_arfcn[LTEcell1]){ TBL1.rows[LTEcell1].cells[BW_idx].innerHTML = parseInt(summary.split("bandwidth")[1],10)+" rb"; }
+					if(arfcn==LTE_arfcn[LTEcell2]){ TBL1.rows[LTEcell2].cells[BW_idx].innerHTML = parseInt(summary.split("bandwidth")[1],10)+" rb"; }
+					if(arfcn==LTE_arfcn[LTEcell3]){ TBL1.rows[LTEcell3].cells[BW_idx].innerHTML = parseInt(summary.split("bandwidth")[1],10)+" rb"; }
+					if(arfcn==LTE_arfcn[LTEcell4]){ TBL1.rows[LTEcell4].cells[BW_idx].innerHTML = parseInt(summary.split("bandwidth")[1],10)+" rb"; }
+					if(arfcn==LTE_arfcn[LTEcell5]){ TBL1.rows[LTEcell5].cells[BW_idx].innerHTML = parseInt(summary.split("bandwidth")[1],10)+" rb"; }
+					if(arfcn==LTE_arfcn[LTEcell6]){ TBL1.rows[LTEcell6].cells[BW_idx].innerHTML = parseInt(summary.split("bandwidth")[1],10)+" rb"; }				
+				}
+			}	
+
+			if(ItemKey == "[0xB0C0/026/009/000]") 
+			{				
+				var messageBody = Item.GetItemParsedText();		
+				var idx=messageBody.search(new RegExp("sCellToReleaseList-r\\d+\\s+{",'g')); 
+				if(idx>0){ 
+					var msg=messageBody.substring(idx+200,idx);  var idx2=msg.search(new RegExp("{",'g')); var idx3=msg.search(new RegExp("}",'g'));
+					if(msg.substring(idx3,idx2).indexOf("1")!=-1){ TBL1.rows[LTEcell1].cells[Scell_state].innerHTML = "Not Configured"; }
+					if(msg.substring(idx3,idx2).indexOf("2")!=-1){ TBL1.rows[LTEcell2].cells[Scell_state].innerHTML = "Not Configured"; }
+					if(msg.substring(idx3,idx2).indexOf("3")!=-1){ TBL1.rows[LTEcell3].cells[Scell_state].innerHTML = "Not Configured"; }
+					if(msg.substring(idx3,idx2).indexOf("4")!=-1){ TBL1.rows[LTEcell4].cells[Scell_state].innerHTML = "Not Configured"; }
+					if(msg.substring(idx3,idx2).indexOf("5")!=-1){ TBL1.rows[LTEcell5].cells[Scell_state].innerHTML = "Not Configured"; }
+					if(msg.substring(idx3,idx2).indexOf("6")!=-1){ TBL1.rows[LTEcell6].cells[Scell_state].innerHTML = "Not Configured"; }
+				}
+				
+				var idx=messageBody.search(new RegExp("sCellIndex-r\\d+\\s+1,",'g'));
+				if(idx>0){ TBL1.rows[LTEcell1].cells[PCI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("physCellId-r")[1].split(" ")[1],10); TBL1.rows[LTEcell1].cells[ARFCN_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10); TBL1.rows[LTEcell1].cells[BW_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-Bandwidth-r")[1].split("n")[1],10)+" rb"; TBL1.rows[LTEcell1].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10)); TBL1.rows[LTEcell1].cells[Scell_state].innerHTML = "Active"; 	}
+				var idx=messageBody.search(new RegExp("sCellIndex-r\\d+\\s+2,",'g'));
+				if(idx>0){ TBL1.rows[LTEcell2].cells[PCI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("physCellId-r")[1].split(" ")[1],10); TBL1.rows[LTEcell2].cells[ARFCN_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10); TBL1.rows[LTEcell2].cells[BW_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-Bandwidth-r")[1].split("n")[1],10)+" rb"; TBL1.rows[LTEcell2].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10)); TBL1.rows[LTEcell2].cells[Scell_state].innerHTML = "Active"; 	}
+				var idx=messageBody.search(new RegExp("sCellIndex-r\\d+\\s+3,",'g'));
+				if(idx>0){ TBL1.rows[LTEcell3].cells[PCI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("physCellId-r")[1].split(" ")[1],10); TBL1.rows[LTEcell3].cells[ARFCN_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10); TBL1.rows[LTEcell3].cells[BW_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-Bandwidth-r")[1].split("n")[1],10)+" rb"; TBL1.rows[LTEcell3].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10)); TBL1.rows[LTEcell3].cells[Scell_state].innerHTML = "Active"; 	}
+				var idx=messageBody.search(new RegExp("sCellIndex-r\\d+\\s+4,",'g'));
+				if(idx>0){ TBL1.rows[LTEcell4].cells[PCI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("physCellId-r")[1].split(" ")[1],10); TBL1.rows[LTEcell4].cells[ARFCN_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10); TBL1.rows[LTEcell4].cells[BW_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-Bandwidth-r")[1].split("n")[1],10)+" rb"; TBL1.rows[LTEcell4].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10)); TBL1.rows[LTEcell4].cells[Scell_state].innerHTML = "Active"; 	}
+				var idx=messageBody.search(new RegExp("sCellIndex-r\\d+\\s+5,",'g'));
+				if(idx>0){ TBL1.rows[LTEcell5].cells[PCI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("physCellId-r")[1].split(" ")[1],10); TBL1.rows[LTEcell5].cells[ARFCN_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10); TBL1.rows[LTEcell5].cells[BW_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-Bandwidth-r")[1].split("n")[1],10)+" rb"; TBL1.rows[LTEcell5].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10)); TBL1.rows[LTEcell5].cells[Scell_state].innerHTML = "Active"; 	}
+				var idx=messageBody.search(new RegExp("sCellIndex-r\\d+\\s+6,",'g'));
+				if(idx>0){ TBL1.rows[LTEcell6].cells[PCI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("physCellId-r")[1].split(" ")[1],10); TBL1.rows[LTEcell6].cells[ARFCN_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10); TBL1.rows[LTEcell6].cells[BW_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split("dl-Bandwidth-r")[1].split("n")[1],10)+" rb"; TBL1.rows[LTEcell6].cells[Band_idx].innerHTML = "B"+LTE_EARFCN_to_Band(parseInt(messageBody.substring(idx+1000,idx).split("dl-CarrierFreq-r")[1].split(" ")[1],10)); TBL1.rows[LTEcell6].cells[Scell_state].innerHTML = "Active"; 	}
+			}
+
+
+			if(ItemKey == "[0xB825]") //NR cell info
+			{
+				var messageBody = Item.GetItemParsedText();
+				//Plain format
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[0\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ var msg=messageBody.substring(idx+400, idx); TBL1.rows[NRcell0].cells[PCI_idx].innerHTML = parseInt(msg.split("Cell Id =")[1],10); TBL1.rows[NRcell0].cells[ARFCN_idx].innerHTML = parseInt(msg.split("DL Arfcn =")[1],10); TBL1.rows[NRcell0].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("Band =")[1],10); TBL1.rows[NRcell0].cells[BW_idx].innerHTML = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; TBL1.rows[NRcell0].cells[Scell_state].innerHTML = "Activated"; /*TBL1.rows[NRcell0].cells[ULBW_idx].innerHTML = msg.split("|")[9]; TBL1.rows[NRcell0].cells[ULARFCN_idx].innerHTML = msg.split("|")[5];*/ }
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[1\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ var msg=messageBody.substring(idx+400, idx); TBL1.rows[NRcell1].cells[PCI_idx].innerHTML = parseInt(msg.split("Cell Id =")[1],10); TBL1.rows[NRcell1].cells[ARFCN_idx].innerHTML = parseInt(msg.split("DL Arfcn =")[1],10); TBL1.rows[NRcell1].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("Band =")[1],10); TBL1.rows[NRcell1].cells[BW_idx].innerHTML = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; TBL1.rows[NRcell1].cells[Scell_state].innerHTML = "Activated"; /*TBL1.rows[NRcell0].cells[ULBW_idx].innerHTML = msg.split("|")[9]; TBL1.rows[NRcell0].cells[ULARFCN_idx].innerHTML = msg.split("|")[5];*/ }
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[2\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ var msg=messageBody.substring(idx+400, idx); TBL1.rows[NRcell2].cells[PCI_idx].innerHTML = parseInt(msg.split("Cell Id =")[1],10); TBL1.rows[NRcell2].cells[ARFCN_idx].innerHTML = parseInt(msg.split("DL Arfcn =")[1],10); TBL1.rows[NRcell2].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("Band =")[1],10); TBL1.rows[NRcell2].cells[BW_idx].innerHTML = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; TBL1.rows[NRcell2].cells[Scell_state].innerHTML = "Activated"; /*TBL1.rows[NRcell0].cells[ULBW_idx].innerHTML = msg.split("|")[9]; TBL1.rows[NRcell0].cells[ULARFCN_idx].innerHTML = msg.split("|")[5];*/ }
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[3\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ var msg=messageBody.substring(idx+400, idx); TBL1.rows[NRcell3].cells[PCI_idx].innerHTML = parseInt(msg.split("Cell Id =")[1],10); TBL1.rows[NRcell3].cells[ARFCN_idx].innerHTML = parseInt(msg.split("DL Arfcn =")[1],10); TBL1.rows[NRcell3].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("Band =")[1],10); TBL1.rows[NRcell3].cells[BW_idx].innerHTML = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; TBL1.rows[NRcell3].cells[Scell_state].innerHTML = "Activated"; /*TBL1.rows[NRcell0].cells[ULBW_idx].innerHTML = msg.split("|")[9]; TBL1.rows[NRcell0].cells[ULARFCN_idx].innerHTML = msg.split("|")[5];*/ }
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[4\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ var msg=messageBody.substring(idx+400, idx); TBL1.rows[NRcell4].cells[PCI_idx].innerHTML = parseInt(msg.split("Cell Id =")[1],10); TBL1.rows[NRcell4].cells[ARFCN_idx].innerHTML = parseInt(msg.split("DL Arfcn =")[1],10); TBL1.rows[NRcell4].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("Band =")[1],10); TBL1.rows[NRcell4].cells[BW_idx].innerHTML = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; TBL1.rows[NRcell4].cells[Scell_state].innerHTML = "Activated"; /*TBL1.rows[NRcell0].cells[ULBW_idx].innerHTML = msg.split("|")[9]; TBL1.rows[NRcell0].cells[ULARFCN_idx].innerHTML = msg.split("|")[5];*/ }
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[5\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ var msg=messageBody.substring(idx+400, idx); TBL1.rows[NRcell5].cells[PCI_idx].innerHTML = parseInt(msg.split("Cell Id =")[1],10); TBL1.rows[NRcell5].cells[ARFCN_idx].innerHTML = parseInt(msg.split("DL Arfcn =")[1],10); TBL1.rows[NRcell5].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("Band =")[1],10); TBL1.rows[NRcell5].cells[BW_idx].innerHTML = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; TBL1.rows[NRcell5].cells[Scell_state].innerHTML = "Activated"; /*TBL1.rows[NRcell0].cells[ULBW_idx].innerHTML = msg.split("|")[9]; TBL1.rows[NRcell0].cells[ULARFCN_idx].innerHTML = msg.split("|")[5];*/ }
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[6\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ var msg=messageBody.substring(idx+400, idx); TBL1.rows[NRcell6].cells[PCI_idx].innerHTML = parseInt(msg.split("Cell Id =")[1],10); TBL1.rows[NRcell6].cells[ARFCN_idx].innerHTML = parseInt(msg.split("DL Arfcn =")[1],10); TBL1.rows[NRcell6].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("Band =")[1],10); TBL1.rows[NRcell6].cells[BW_idx].innerHTML = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; TBL1.rows[NRcell6].cells[Scell_state].innerHTML = "Activated"; /*TBL1.rows[NRcell0].cells[ULBW_idx].innerHTML = msg.split("|")[9]; TBL1.rows[NRcell0].cells[ULARFCN_idx].innerHTML = msg.split("|")[5];*/ }
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[7\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ var msg=messageBody.substring(idx+400, idx); TBL1.rows[NRcell7].cells[PCI_idx].innerHTML = parseInt(msg.split("Cell Id =")[1],10); TBL1.rows[NRcell7].cells[ARFCN_idx].innerHTML = parseInt(msg.split("DL Arfcn =")[1],10); TBL1.rows[NRcell7].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("Band =")[1],10); TBL1.rows[NRcell7].cells[BW_idx].innerHTML = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; TBL1.rows[NRcell7].cells[Scell_state].innerHTML = "Activated"; /*TBL1.rows[NRcell0].cells[ULBW_idx].innerHTML = msg.split("|")[9]; TBL1.rows[NRcell0].cells[ULARFCN_idx].innerHTML = msg.split("|")[5];*/ }
+				/* //QCAT format
+				var idx=messageBody.search(new RegExp("\\|\\s+\\d+\\|\\s+0\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[MMW|SUB6]",'g'));
+				if(idx>0){ var msg=messageBody.substring(idx+200, idx); TBL1.rows[NRcell0].cells[PCI_idx].innerHTML = msg.split("|")[3]; TBL1.rows[NRcell0].cells[ARFCN_idx].innerHTML = msg.split("|")[4]; TBL1.rows[NRcell0].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("|")[6],10); TBL1.rows[NRcell0].cells[BW_idx].innerHTML = msg.split("|")[8];  TBL1.rows[NRcell0].cells[Scell_state].innerHTML = "Activated"; }
+				var idx=messageBody.search(new RegExp("\\|\\s+\\d+\\|\\s+1\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[MMW|SUB6]",'g'));
+				if(idx>0){ var msg=messageBody.substring(idx+200, idx); TBL1.rows[NRcell1].cells[PCI_idx].innerHTML = msg.split("|")[3]; TBL1.rows[NRcell1].cells[ARFCN_idx].innerHTML = msg.split("|")[4]; TBL1.rows[NRcell1].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("|")[6],10); TBL1.rows[NRcell1].cells[BW_idx].innerHTML = msg.split("|")[8];  TBL1.rows[NRcell1].cells[Scell_state].innerHTML = "Activated"; }
+				var idx=messageBody.search(new RegExp("\\|\\s+\\d+\\|\\s+2\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[MMW|SUB6]",'g'));
+				if(idx>0){ var msg=messageBody.substring(idx+200, idx); TBL1.rows[NRcell2].cells[PCI_idx].innerHTML = msg.split("|")[3]; TBL1.rows[NRcell2].cells[ARFCN_idx].innerHTML = msg.split("|")[4]; TBL1.rows[NRcell2].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("|")[6],10); TBL1.rows[NRcell2].cells[BW_idx].innerHTML = msg.split("|")[8];  TBL1.rows[NRcell2].cells[Scell_state].innerHTML = "Activated"; }
+				var idx=messageBody.search(new RegExp("\\|\\s+\\d+\\|\\s+3\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[MMW|SUB6]",'g'));
+				if(idx>0){ var msg=messageBody.substring(idx+200, idx); TBL1.rows[NRcell3].cells[PCI_idx].innerHTML = msg.split("|")[3]; TBL1.rows[NRcell3].cells[ARFCN_idx].innerHTML = msg.split("|")[4]; TBL1.rows[NRcell3].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("|")[6],10); TBL1.rows[NRcell3].cells[BW_idx].innerHTML = msg.split("|")[8];  TBL1.rows[NRcell3].cells[Scell_state].innerHTML = "Activated"; }
+				var idx=messageBody.search(new RegExp("\\|\\s+\\d+\\|\\s+4\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[MMW|SUB6]",'g'));
+				if(idx>0){ var msg=messageBody.substring(idx+200, idx); TBL1.rows[NRcell4].cells[PCI_idx].innerHTML = msg.split("|")[3]; TBL1.rows[NRcell4].cells[ARFCN_idx].innerHTML = msg.split("|")[4]; TBL1.rows[NRcell4].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("|")[6],10); TBL1.rows[NRcell4].cells[BW_idx].innerHTML = msg.split("|")[8];  TBL1.rows[NRcell4].cells[Scell_state].innerHTML = "Activated"; }
+				var idx=messageBody.search(new RegExp("\\|\\s+\\d+\\|\\s+5\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[MMW|SUB6]",'g'));
+				if(idx>0){ var msg=messageBody.substring(idx+200, idx); TBL1.rows[NRcell5].cells[PCI_idx].innerHTML = msg.split("|")[3]; TBL1.rows[NRcell5].cells[ARFCN_idx].innerHTML = msg.split("|")[4]; TBL1.rows[NRcell5].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("|")[6],10); TBL1.rows[NRcell5].cells[BW_idx].innerHTML = msg.split("|")[8];  TBL1.rows[NRcell5].cells[Scell_state].innerHTML = "Activated"; }
+				var idx=messageBody.search(new RegExp("\\|\\s+\\d+\\|\\s+6\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[MMW|SUB6]",'g'));
+				if(idx>0){ var msg=messageBody.substring(idx+200, idx); TBL1.rows[NRcell6].cells[PCI_idx].innerHTML = msg.split("|")[3]; TBL1.rows[NRcell6].cells[ARFCN_idx].innerHTML = msg.split("|")[4]; TBL1.rows[NRcell6].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("|")[6],10); TBL1.rows[NRcell6].cells[BW_idx].innerHTML = msg.split("|")[8];  TBL1.rows[NRcell6].cells[Scell_state].innerHTML = "Activated"; }
+				var idx=messageBody.search(new RegExp("\\|\\s+\\d+\\|\\s+7\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[MMW|SUB6]",'g'));
+				if(idx>0){ var msg=messageBody.substring(idx+200, idx); TBL1.rows[NRcell7].cells[PCI_idx].innerHTML = msg.split("|")[3]; TBL1.rows[NRcell7].cells[ARFCN_idx].innerHTML = msg.split("|")[4]; TBL1.rows[NRcell7].cells[Band_idx].innerHTML = "n"+parseInt(msg.split("|")[6],10); TBL1.rows[NRcell7].cells[BW_idx].innerHTML = msg.split("|")[8];  TBL1.rows[NRcell7].cells[Scell_state].innerHTML = "Activated"; }
+				*/
+			}
+			/*
+			if(ItemKey == "[03184]") //NR Pcell info
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();		
+				if(summary.indexOf("EVENT_NR5G_RRC_NEW_CELL_IND.*SSB Freq") !=-1){ TBL1.rows[NRcell0].cells[ARFCN_idx].innerHTML = parseInt(summary.split("SSB Freq =")[1],10); TBL1.rows[NRcell0].cells[PCI_idx].innerHTML = parseInt(summary.split("Phy Cell Id =")[1],10); TBL1.rows[NRcell0].cells[BW_idx].innerHTML = parseInt(summary.split("Cell BW =")[1],10)+"MHz"; 	} //TBL1.rows[NRcell0].cells[Band_idx].innerHTML =  "n"+ NR_Arfcn_to_Band( parseInt(str_split[1],10) ) ; //if ARFCN 422424, difficult to distingush between n1 and n66
+			}
+			*/
+
+			if(ItemKey == "[03252]")
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();			
+				if((summary.indexOf("NR5G_UL_PDCP_REG_REQ")!=-1 || summary.indexOf("NR5G_UL_PDCP_DEREG_REQ")!=-1) && summary.indexOf("+ NR5G") == -1){ 								
+					if(TBL1.rows[NRcell0].cells[Scell_state].innerHTML != "-"){ TBL1.rows[NRcell0].cells[Scell_state].innerHTML = "Deactivated"; }
+					if(TBL1.rows[NRcell1].cells[Scell_state].innerHTML != "-"){ TBL1.rows[NRcell1].cells[Scell_state].innerHTML = "Deactivated"; }
+					if(TBL1.rows[NRcell2].cells[Scell_state].innerHTML != "-"){ TBL1.rows[NRcell2].cells[Scell_state].innerHTML = "Deactivated"; }
+					if(TBL1.rows[NRcell3].cells[Scell_state].innerHTML != "-"){ TBL1.rows[NRcell3].cells[Scell_state].innerHTML = "Deactivated"; }
+					if(TBL1.rows[NRcell4].cells[Scell_state].innerHTML != "-"){ TBL1.rows[NRcell4].cells[Scell_state].innerHTML = "Deactivated"; }
+					if(TBL1.rows[NRcell5].cells[Scell_state].innerHTML != "-"){ TBL1.rows[NRcell5].cells[Scell_state].innerHTML = "Deactivated"; }
+					if(TBL1.rows[NRcell6].cells[Scell_state].innerHTML != "-"){ TBL1.rows[NRcell6].cells[Scell_state].innerHTML = "Deactivated"; }
+					if(TBL1.rows[NRcell7].cells[Scell_state].innerHTML != "-"){ TBL1.rows[NRcell7].cells[Scell_state].innerHTML = "Deactivated"; }
+				}				
+			}
+
+			if(ItemKey == "[0xB193]") //LTE RSRP,RSRQ
+			{
+				var messageBody = Item.GetItemParsedText();
+				var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+PCell",'g'));
+				if(idx>0){ TBL1.rows[LTEcell0].cells[RSRP_idx].innerHTML = messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0]; TBL1.rows[LTEcell0].cells[RSRQ_idx].innerHTML = messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0]; }
+				var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC1",'g'));
+				if(idx>0){ TBL1.rows[LTEcell1].cells[RSRP_idx].innerHTML = messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0]; TBL1.rows[LTEcell1].cells[RSRQ_idx].innerHTML = messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0]; }
+				var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC2",'g'));
+				if(idx>0){ TBL1.rows[LTEcell2].cells[RSRP_idx].innerHTML = messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0]; TBL1.rows[LTEcell2].cells[RSRQ_idx].innerHTML = messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0]; }
+				var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC3",'g'));
+				if(idx>0){ TBL1.rows[LTEcell3].cells[RSRP_idx].innerHTML = messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0]; TBL1.rows[LTEcell3].cells[RSRQ_idx].innerHTML = messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0]; }
+				var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC4",'g'));
+				if(idx>0){ TBL1.rows[LTEcell4].cells[RSRP_idx].innerHTML = messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0]; TBL1.rows[LTEcell4].cells[RSRQ_idx].innerHTML = messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0]; }
+				var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC5",'g'));
+				if(idx>0){ TBL1.rows[LTEcell5].cells[RSRP_idx].innerHTML = messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0]; TBL1.rows[LTEcell5].cells[RSRQ_idx].innerHTML = messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0]; }
+				var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC6",'g'));
+				if(idx>0){ TBL1.rows[LTEcell6].cells[RSRP_idx].innerHTML = messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0]; TBL1.rows[LTEcell6].cells[RSRQ_idx].innerHTML = messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0]; }
+			}
+			
+			if(ItemKey == "[0xB97F]") //NR RSRP,RSRQ
+			{
+				if(B97F_trig == 1){ B97F_trig = 0;	
+				var messageBody = Item.GetItemParsedText();
+				//Plain format
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[0\\]",'g'));							
+				if(idx>0){ TBL1.rows[NRcell0].cells[RSRP_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; TBL1.rows[NRcell0].cells[RSRQ_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0]; } 							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[1\\]",'g'));							
+				if(idx>0){ TBL1.rows[NRcell1].cells[RSRP_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; TBL1.rows[NRcell1].cells[RSRQ_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0]; } 							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[2\\]",'g'));							
+				if(idx>0){ TBL1.rows[NRcell2].cells[RSRP_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; TBL1.rows[NRcell2].cells[RSRQ_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0]; } 							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[3\\]",'g'));							
+				if(idx>0){ TBL1.rows[NRcell3].cells[RSRP_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; TBL1.rows[NRcell3].cells[RSRQ_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0]; } 							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[4\\]",'g'));							
+				if(idx>0){ TBL1.rows[NRcell4].cells[RSRP_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; TBL1.rows[NRcell4].cells[RSRQ_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0]; } 							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[5\\]",'g'));							
+				if(idx>0){ TBL1.rows[NRcell5].cells[RSRP_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; TBL1.rows[NRcell5].cells[RSRQ_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0]; } 							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[6\\]",'g'));							
+				if(idx>0){ TBL1.rows[NRcell6].cells[RSRP_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; TBL1.rows[NRcell6].cells[RSRQ_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0]; } 							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[7\\]",'g'));							
+				if(idx>0){ TBL1.rows[NRcell7].cells[RSRP_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; TBL1.rows[NRcell7].cells[RSRQ_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0]; } 							
+				/* //QCAT format
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[0\\]",'g'));							
+				if(idx>0){ var msg = messageBody.substring(idx+2500,idx); var idx2=msg.search(new RegExp("\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\-.*\\|",'g')); if(idx2>0){ TBL1.rows[NRcell0].cells[RSRP_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[5]; TBL1.rows[NRcell0].cells[RSRQ_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[6]; } }							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[1\\]",'g'));							
+				if(idx>0){ var msg = messageBody.substring(idx+2500,idx); var idx2=msg.search(new RegExp("\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\-.*\\|",'g')); if(idx2>0){ TBL1.rows[NRcell1].cells[RSRP_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[5]; TBL1.rows[NRcell1].cells[RSRQ_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[6]; } }							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[2\\]",'g'));							
+				if(idx>0){ var msg = messageBody.substring(idx+2500,idx); var idx2=msg.search(new RegExp("\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\-.*\\|",'g')); if(idx2>0){ TBL1.rows[NRcell2].cells[RSRP_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[5]; TBL1.rows[NRcell2].cells[RSRQ_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[6]; } }							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[3\\]",'g'));							
+				if(idx>0){ var msg = messageBody.substring(idx+2500,idx); var idx2=msg.search(new RegExp("\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\-.*\\|",'g')); if(idx2>0){ TBL1.rows[NRcell3].cells[RSRP_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[5]; TBL1.rows[NRcell3].cells[RSRQ_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[6]; } }							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[4\\]",'g'));							
+				if(idx>0){ var msg = messageBody.substring(idx+2500,idx); var idx2=msg.search(new RegExp("\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\-.*\\|",'g')); if(idx2>0){ TBL1.rows[NRcell4].cells[RSRP_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[5]; TBL1.rows[NRcell4].cells[RSRQ_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[6]; } }							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[5\\]",'g'));							
+				if(idx>0){ var msg = messageBody.substring(idx+2500,idx); var idx2=msg.search(new RegExp("\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\-.*\\|",'g')); if(idx2>0){ TBL1.rows[NRcell5].cells[RSRP_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[5]; TBL1.rows[NRcell5].cells[RSRQ_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[6]; } }							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[6\\]",'g'));							
+				if(idx>0){ var msg = messageBody.substring(idx+2500,idx); var idx2=msg.search(new RegExp("\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\-.*\\|",'g')); if(idx2>0){ TBL1.rows[NRcell6].cells[RSRP_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[5]; TBL1.rows[NRcell6].cells[RSRQ_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[6]; } }							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[7\\]",'g'));							
+				if(idx>0){ var msg = messageBody.substring(idx+2500,idx); var idx2=msg.search(new RegExp("\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\-.*\\|",'g')); if(idx2>0){ TBL1.rows[NRcell7].cells[RSRP_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[5]; TBL1.rows[NRcell7].cells[RSRQ_idx].innerHTML = msg.substring(idx2+100, idx2).split("|")[6]; } }							
+				*/
+				}
+			}
+			
+
+			if(ItemKey == "[0076/04/0]" || ItemKey == "[0076/04/2]")
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();
+				if(summary.indexOf("===== ANALYSIS #") !=-1){ //capture max tput
+					if(chkDL.value==1 && (LTEIPA>=thDL.value || NRIPA>=thDL.value) && (LTEIPA<=RANGE_DL && NRIPA<=RANGE_DL)  && (LTEIPA>MAXDL || NRIPA>MAXDL)){ if(LTEIPA>NRIPA){MAXDL=LTEIPA;}else{MAXDL=NRIPA;} Capture_TBL2(); }	
+					if(chkDL.value==2 && LTEPHY>=thDL.value && LTEPHY<=RANGE_DL && LTEPHY>MAXDL){ MAXDL=LTEPHY;	 Capture_TBL2(); }	
+					if(chkDL.value==3 && NRPHY>=thDL.value && NRPHY<=RANGE_DL && NRPHY>MAXDL){ MAXDL=NRPHY;	 Capture_TBL2(); }	
+					if(chkUL.value==1 && (LTEULIPA>=thUL.value || NRULIPA>=thUL.value) && (LTEULIPA<=RANGE_UL && NRULIPA<=RANGE_UL) && (LTEULIPA>MAXUL || NRULIPA>MAXUL)){ if(LTEULIPA>NRULIPA){MAXUL=LTEULIPA;}else{MAXUL=NRULIPA;} Capture_TBL3(); }	
+					if(chkUL.value==2 && LTEULPHY>=thUL.value && LTEULPHY<=RANGE_UL && LTEULPHY>MAXUL){ MAXUL=LTEULPHY;	 Capture_TBL3(); }	
+					if(chkUL.value==3 && NRULPHY>=thUL.value && NRULPHY<=RANGE_UL && NRULPHY>MAXUL){ MAXUL=NRULPHY;	 Capture_TBL3(); }	
+				}
+							
+				if(summary.search(new RegExp("ENL2DL.*NR.*DL since last.*5gPHY",'g')) >0){ TBL1.rows[NRPHYTot].cells[PDCPT_idx].innerHTML = parseInt(summary.split("5gPHY|")[1],10) +" Kbps"; TBL1.rows[NRRLCTot].cells[PDCPT_idx].innerHTML = parseInt(summary.split("5gRLC|")[1],10) +" Kbps"; TBL1.rows[NRPDCPTot].cells[PDCPT_idx].innerHTML = parseInt(summary.split("5gPDCP|")[1],10) +" Kbps"; TBL1.rows[NRIPATot].cells[PDCPT_idx].innerHTML = parseInt(summary.split("IPA|")[1],10) +" Kbps"; NRPHY = parseInt(summary.split("5gPHY|")[1],10); NRIPA = parseInt(summary.split("IPA|")[1],10); timestamp_maxdl=timestamp; }
+				if(summary.search(new RegExp("ENL2DL.*LT.*DL since last.*4gPHY",'g')) >0){ TBL1.rows[LTEPHYTot].cells[PDCPT_idx].innerHTML = parseInt(summary.split("4gPHY|")[1],10) +" Kbps"; TBL1.rows[LTERLCTot].cells[PDCPT_idx].innerHTML = parseInt(summary.split("4gRLC|")[1],10) +" Kbps"; TBL1.rows[LTEPDCPTot].cells[PDCPT_idx].innerHTML = parseInt(summary.split("4gPDCP|")[1],10) +" Kbps"; TBL1.rows[LTEIPATot].cells[PDCPT_idx].innerHTML = parseInt(summary.split("IPA|")[1],10) +" Kbps"; LTEPHY = parseInt(summary.split("4gPHY|")[1],10); LTEIPA = parseInt(summary.split("IPA|")[1],10); timestamp_maxdl=timestamp;  }
+				if(summary.search(new RegExp("ENL2UL.*NR.*UL since last.*IPA",'g')) >0){ TBL1.rows[NRPHYTot].cells[UL_PDCPT_idx].innerHTML = parseInt(summary.split("PHY|")[1],10) +" Kbps"; TBL1.rows[NRPDCPTot].cells[UL_PDCPT_idx].innerHTML = parseInt(summary.split("IPA|")[1],10) +" Kbps"; NRULPHY = parseInt(summary.split("PHY|")[1],10); NRULIPA = parseInt(summary.split("IPA|")[1],10); timestamp_maxul=timestamp; }					
+				if(summary.search(new RegExp("ENL2UL.*LT.*UL since last.*IPA",'g')) >0){ TBL1.rows[LTEPHYTot].cells[UL_PDCPT_idx].innerHTML = parseInt(summary.split("PHY|")[1],10) +" Kbps"; TBL1.rows[LTEcell0].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("PHY|")[1],10) +" Kbps"; TBL1.rows[LTEPDCPTot].cells[UL_PDCPT_idx].innerHTML = parseInt(summary.split("IPA|")[1],10) +" Kbps"; LTEULPHY = parseInt(summary.split("PHY|")[1],10); LTEULIPA = parseInt(summary.split("IPA|")[1],10); timestamp_maxul=timestamp; }
+
+				if(summary.search(new RegExp("NR5GMAC.*DL since last.*CA_ID:\\s+0",'g')) >0){ if(summary.indexOf("No PDSCH grant")!=-1){ TBL1.rows[NRcell0].cells[PHYT_idx].innerHTML = "No PDSCH grant"; } else{ TBL1.rows[NRcell0].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell0].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell0].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell0].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; } }
+				if(summary.search(new RegExp("NR5GMAC.*DL since last.*CA_ID:\\s+1",'g')) >0){ if(summary.indexOf("No PDSCH grant")!=-1){ TBL1.rows[NRcell1].cells[PHYT_idx].innerHTML = "No PDSCH grant"; } else{ TBL1.rows[NRcell1].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell1].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell1].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell1].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; } }
+				if(summary.search(new RegExp("NR5GMAC.*DL since last.*CA_ID:\\s+2",'g')) >0){ if(summary.indexOf("No PDSCH grant")!=-1){ TBL1.rows[NRcell2].cells[PHYT_idx].innerHTML = "No PDSCH grant"; } else{ TBL1.rows[NRcell2].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell2].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell2].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell2].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; } }
+				if(summary.search(new RegExp("NR5GMAC.*DL since last.*CA_ID:\\s+3",'g')) >0){ if(summary.indexOf("No PDSCH grant")!=-1){ TBL1.rows[NRcell3].cells[PHYT_idx].innerHTML = "No PDSCH grant"; } else{ TBL1.rows[NRcell3].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell3].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell3].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell3].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; } }				
+				if(summary.search(new RegExp("NR5GMAC.*DL since last.*CA_ID:\\s+4",'g')) >0){ if(summary.indexOf("No PDSCH grant")!=-1){ TBL1.rows[NRcell4].cells[PHYT_idx].innerHTML = "No PDSCH grant"; } else{ TBL1.rows[NRcell4].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell4].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell4].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell4].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; } }
+				if(summary.search(new RegExp("NR5GMAC.*DL since last.*CA_ID:\\s+5",'g')) >0){ if(summary.indexOf("No PDSCH grant")!=-1){ TBL1.rows[NRcell5].cells[PHYT_idx].innerHTML = "No PDSCH grant"; } else{ TBL1.rows[NRcell5].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell5].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell5].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell5].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; } }
+				if(summary.search(new RegExp("NR5GMAC.*DL since last.*CA_ID:\\s+6",'g')) >0){ if(summary.indexOf("No PDSCH grant")!=-1){ TBL1.rows[NRcell6].cells[PHYT_idx].innerHTML = "No PDSCH grant"; } else{ TBL1.rows[NRcell6].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell6].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell6].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell6].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; } }
+				if(summary.search(new RegExp("NR5GMAC.*DL since last.*CA_ID:\\s+7",'g')) >0){ if(summary.indexOf("No PDSCH grant")!=-1){ TBL1.rows[NRcell7].cells[PHYT_idx].innerHTML = "No PDSCH grant"; } else{ TBL1.rows[NRcell7].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell7].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell7].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell7].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; } }
+
+				if(summary.search(new RegExp("NR5GMAC.*UL since last.*CA_ID:\\s+0",'g')) >0){ if(summary.indexOf("No PUSCH grant")!=-1){ TBL1.rows[NRcell0].cells[UL_PHYT_idx].innerHTML = "No PUSCH grant"; } else{ TBL1.rows[NRcell0].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell0].cells[UL_BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell0].cells[UL_MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +"";	TBL1.rows[NRcell0].cells[UL_RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +"";  /*TBL1.rows[NRcell0].cells[PHR_idx].innerHTML = ConvertPHRidxtoDB(parseInt(summary.split("AvgPHRidx:")[1],10));*/ } }
+				if(summary.search(new RegExp("NR5GMAC.*UL since last.*CA_ID:\\s+1",'g')) >0){ if(summary.indexOf("No PUSCH grant")!=-1){ TBL1.rows[NRcell1].cells[UL_PHYT_idx].innerHTML = "No PUSCH grant"; } else{ TBL1.rows[NRcell1].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell1].cells[UL_BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell1].cells[UL_MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell1].cells[UL_RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; /*TBL1.rows[NRcell1].cells[PHR_idx].innerHTML = ConvertPHRidxtoDB(parseInt(summary.split("AvgPHRidx:")[1],10));*/ } }				
+				if(summary.search(new RegExp("NR5GMAC.*UL since last.*CA_ID:\\s+2",'g')) >0){ if(summary.indexOf("No PUSCH grant")!=-1){ TBL1.rows[NRcell2].cells[UL_PHYT_idx].innerHTML = "No PUSCH grant"; } else{ TBL1.rows[NRcell2].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell2].cells[UL_BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell2].cells[UL_MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +"";	TBL1.rows[NRcell2].cells[UL_RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +"";  /*TBL1.rows[NRcell2].cells[PHR_idx].innerHTML = ConvertPHRidxtoDB(parseInt(summary.split("AvgPHRidx:")[1],10));*/ } }
+				if(summary.search(new RegExp("NR5GMAC.*UL since last.*CA_ID:\\s+3",'g')) >0){ if(summary.indexOf("No PUSCH grant")!=-1){ TBL1.rows[NRcell3].cells[UL_PHYT_idx].innerHTML = "No PUSCH grant"; } else{ TBL1.rows[NRcell3].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[NRcell3].cells[UL_BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[NRcell3].cells[UL_MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[NRcell3].cells[UL_RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; /*TBL1.rows[NRcell3].cells[PHR_idx].innerHTML = ConvertPHRidxtoDB(parseInt(summary.split("AvgPHRidx:")[1],10));*/ } }				
+
+				if(summary.search(new RegExp("LML1.*DL since last.*CA_ID:\\s+0",'g')) >0){ TBL1.rows[LTEcell0].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell0].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell0].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[LTEcell0].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; }
+				if(summary.search(new RegExp("LML1.*DL since last.*CA_ID:\\s+1",'g')) >0){ TBL1.rows[LTEcell1].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell1].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell1].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[LTEcell1].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; }
+				if(summary.search(new RegExp("LML1.*DL since last.*CA_ID:\\s+2",'g')) >0){ TBL1.rows[LTEcell2].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell2].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell2].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[LTEcell2].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; }
+				if(summary.search(new RegExp("LML1.*DL since last.*CA_ID:\\s+3",'g')) >0){ TBL1.rows[LTEcell3].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell3].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell3].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[LTEcell3].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; }
+				if(summary.search(new RegExp("LML1.*DL since last.*CA_ID:\\s+4",'g')) >0){ TBL1.rows[LTEcell4].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell4].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell4].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[LTEcell4].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; }
+				if(summary.search(new RegExp("LML1.*DL since last.*CA_ID:\\s+5",'g')) >0){ TBL1.rows[LTEcell5].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell5].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell5].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[LTEcell5].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; }
+				if(summary.search(new RegExp("LML1.*DL since last.*CA_ID:\\s+6",'g')) >0){ TBL1.rows[LTEcell6].cells[PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell6].cells[BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell6].cells[MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +""; TBL1.rows[LTEcell6].cells[RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +""; }
+
+				if(summary.search(new RegExp("LML1.*UL since last.*CA_ID:\\s+0",'g')) >0){ TBL1.rows[LTEcell0].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell0].cells[UL_BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell0].cells[UL_MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +"";	TBL1.rows[LTEcell0].cells[UL_RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +"";  /*TBL1.rows[LTEcell0].cells[PHR_idx].innerHTML = ConvertPHRidxtoDB(parseInt(summary.split("AvgPHRidx:")[1],10));*/ }
+				if(summary.search(new RegExp("LML1.*UL since last.*CA_ID:\\s+1",'g')) >0){ TBL1.rows[LTEcell1].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell1].cells[UL_BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell1].cells[UL_MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +"";	TBL1.rows[LTEcell1].cells[UL_RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +"";  /*TBL1.rows[LTEcell1].cells[PHR_idx].innerHTML = ConvertPHRidxtoDB(parseInt(summary.split("AvgPHRidx:")[1],10));*/ }
+				if(summary.search(new RegExp("LML1.*UL since last.*CA_ID:\\s+2",'g')) >0){ TBL1.rows[LTEcell2].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell2].cells[UL_BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell2].cells[UL_MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +"";	TBL1.rows[LTEcell2].cells[UL_RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +"";  /*TBL1.rows[LTEcell2].cells[PHR_idx].innerHTML = ConvertPHRidxtoDB(parseInt(summary.split("AvgPHRidx:")[1],10));*/ }
+				if(summary.search(new RegExp("LML1.*UL since last.*CA_ID:\\s+3",'g')) >0){ TBL1.rows[LTEcell3].cells[UL_PHYT_idx].innerHTML = parseInt(summary.split("AvgPHY:")[1],10) +" Kbps"; TBL1.rows[LTEcell3].cells[UL_BLER_idx].innerHTML = parseInt(summary.split("BLER:")[1],10) +"%"; TBL1.rows[LTEcell3].cells[UL_MCS_idx].innerHTML = parseInt(summary.split("AvgMCS:")[1],10) +"";	TBL1.rows[LTEcell3].cells[UL_RB_idx].innerHTML = parseInt(summary.split("AvgRB:")[1],10) +"";  /*TBL1.rows[LTEcell3].cells[PHR_idx].innerHTML = ConvertPHRidxtoDB(parseInt(summary.split("AvgPHRidx:")[1],10));*/ }
+
+			}
+
+		    if(ItemKey == "[0xB14E]") //LTE CSF-CQI,RI
+			{				
+				var messageBody = Item.GetItemParsedText();
+				var idx = messageBody.search(new RegExp( "Carrier Index\\s+=\\s+PCC",'g'));
+				if(idx>0){ TBL1.rows[LTEcell0].cells[RI_idx].innerHTML = messageBody.split("Rank Index")[1].split("=")[1].split("Number")[0]; TBL1.rows[LTEcell0].cells[CQI_idx].innerHTML = parseInt(messageBody.split("WideBand CQI CW0")[1].split("=")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier Index\\s+=\\s+SCC1",'g'));
+				if(idx>0){ TBL1.rows[LTEcell1].cells[RI_idx].innerHTML = messageBody.split("Rank Index")[1].split("=")[1].split("Number")[0]; TBL1.rows[LTEcell1].cells[CQI_idx].innerHTML = parseInt(messageBody.split("WideBand CQI CW0")[1].split("=")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier Index\\s+=\\s+SCC2",'g'));
+				if(idx>0){ TBL1.rows[LTEcell2].cells[RI_idx].innerHTML = messageBody.split("Rank Index")[1].split("=")[1].split("Number")[0]; TBL1.rows[LTEcell2].cells[CQI_idx].innerHTML = parseInt(messageBody.split("WideBand CQI CW0")[1].split("=")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier Index\\s+=\\s+SCC3",'g'));
+				if(idx>0){ TBL1.rows[LTEcell3].cells[RI_idx].innerHTML = messageBody.split("Rank Index")[1].split("=")[1].split("Number")[0]; TBL1.rows[LTEcell3].cells[CQI_idx].innerHTML = parseInt(messageBody.split("WideBand CQI CW0")[1].split("=")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier Index\\s+=\\s+SCC4",'g'));
+				if(idx>0){ TBL1.rows[LTEcell4].cells[RI_idx].innerHTML = messageBody.split("Rank Index")[1].split("=")[1].split("Number")[0]; TBL1.rows[LTEcell4].cells[CQI_idx].innerHTML = parseInt(messageBody.split("WideBand CQI CW0")[1].split("=")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier Index\\s+=\\s+SCC5",'g'));
+				if(idx>0){ TBL1.rows[LTEcell5].cells[RI_idx].innerHTML = messageBody.split("Rank Index")[1].split("=")[1].split("Number")[0]; TBL1.rows[LTEcell5].cells[CQI_idx].innerHTML = parseInt(messageBody.split("WideBand CQI CW0")[1].split("=")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier Index\\s+=\\s+SCC6",'g'));
+				if(idx>0){ TBL1.rows[LTEcell6].cells[RI_idx].innerHTML = messageBody.split("Rank Index")[1].split("=")[1].split("Number")[0]; TBL1.rows[LTEcell6].cells[CQI_idx].innerHTML = parseInt(messageBody.split("WideBand CQI CW0")[1].split("=")[1],10); }
+			}
+
+			if(ItemKey == "[0xB8A7]") //NR CSF-CQI,RI
+			{				
+				var messageBody = Item.GetItemParsedText();
+				//Plain format				
+				var idx = messageBody.search(new RegExp( "Carrier ID\\s+=\\s+0\\s+Resource Carrier ID\\s+=\\s+\\d+\\s+Report ID\\s+=\\s+\\d+\\s+Report Type\\s+=\\s+\\w+\\s+Report Quantity Bitmask\\s+=\\s+CRI \\| RI \\| PMI \\| CQI",'g')); 
+				if(idx>0){ TBL1.rows[NRcell0].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" RI =")[1],10); TBL1.rows[NRcell0].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" WB CQI =")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier ID\\s+=\\s+1\\s+Resource Carrier ID\\s+=\\s+\\d+\\s+Report ID\\s+=\\s+\\d+\\s+Report Type\\s+=\\s+\\w+\\s+Report Quantity Bitmask\\s+=\\s+CRI \\| RI \\| PMI \\| CQI",'g'));
+				if(idx>0){ TBL1.rows[NRcell1].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" RI =")[1],10); TBL1.rows[NRcell1].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" WB CQI =")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier ID\\s+=\\s+2\\s+Resource Carrier ID\\s+=\\s+\\d+\\s+Report ID\\s+=\\s+\\d+\\s+Report Type\\s+=\\s+\\w+\\s+Report Quantity Bitmask\\s+=\\s+CRI \\| RI \\| PMI \\| CQI",'g')); 
+				if(idx>0){ TBL1.rows[NRcell2].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" RI =")[1],10); TBL1.rows[NRcell2].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" WB CQI =")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier ID\\s+=\\s+3\\s+Resource Carrier ID\\s+=\\s+\\d+\\s+Report ID\\s+=\\s+\\d+\\s+Report Type\\s+=\\s+\\w+\\s+Report Quantity Bitmask\\s+=\\s+CRI \\| RI \\| PMI \\| CQI",'g'));
+				if(idx>0){ TBL1.rows[NRcell3].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" RI =")[1],10); TBL1.rows[NRcell3].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" WB CQI =")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier ID\\s+=\\s+4\\s+Resource Carrier ID\\s+=\\s+\\d+\\s+Report ID\\s+=\\s+\\d+\\s+Report Type\\s+=\\s+\\w+\\s+Report Quantity Bitmask\\s+=\\s+CRI \\| RI \\| PMI \\| CQI",'g'));
+				if(idx>0){ TBL1.rows[NRcell4].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" RI =")[1],10); TBL1.rows[NRcell4].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" WB CQI =")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier ID\\s+=\\s+5\\s+Resource Carrier ID\\s+=\\s+\\d+\\s+Report ID\\s+=\\s+\\d+\\s+Report Type\\s+=\\s+\\w+\\s+Report Quantity Bitmask\\s+=\\s+CRI \\| RI \\| PMI \\| CQI",'g'));
+				if(idx>0){ TBL1.rows[NRcell5].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" RI =")[1],10); TBL1.rows[NRcell5].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" WB CQI =")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier ID\\s+=\\s+6\\s+Resource Carrier ID\\s+=\\s+\\d+\\s+Report ID\\s+=\\s+\\d+\\s+Report Type\\s+=\\s+\\w+\\s+Report Quantity Bitmask\\s+=\\s+CRI \\| RI \\| PMI \\| CQI",'g')); 
+				if(idx>0){ TBL1.rows[NRcell6].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" RI =")[1],10); TBL1.rows[NRcell6].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" WB CQI =")[1],10); }
+				var idx = messageBody.search(new RegExp( "Carrier ID\\s+=\\s+7\\s+Resource Carrier ID\\s+=\\s+\\d+\\s+Report ID\\s+=\\s+\\d+\\s+Report Type\\s+=\\s+\\w+\\s+Report Quantity Bitmask\\s+=\\s+CRI \\| RI \\| PMI \\| CQI",'g')); 
+				if(idx>0){ TBL1.rows[NRcell7].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" RI =")[1],10); TBL1.rows[NRcell7].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+1000,idx).split(" WB CQI =")[1],10); }
+				/* //QCAT format
+				var idx = messageBody.search(new RegExp( "\\|\\s+0\\|\\s+\\d+\\|\\s+\\d+\\|\\s+.*\\|\\s+CRI:RI:PMI:CQI\\|",'g'));
+				if(idx>0){ TBL1.rows[NRcell0].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[19],10); TBL1.rows[NRcell0].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[20],10); }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+1\\|\\s+\\d+\\|\\s+\\d+\\|\\s+.*\\|\\s+CRI:RI:PMI:CQI\\|",'g'));
+				if(idx>0){ TBL1.rows[NRcell1].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[19],10); TBL1.rows[NRcell1].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[20],10); }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+2\\|\\s+\\d+\\|\\s+\\d+\\|\\s+.*\\|\\s+CRI:RI:PMI:CQI\\|",'g'));
+				if(idx>0){ TBL1.rows[NRcell2].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[19],10); TBL1.rows[NRcell2].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[20],10); }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+3\\|\\s+\\d+\\|\\s+\\d+\\|\\s+.*\\|\\s+CRI:RI:PMI:CQI\\|",'g'));
+				if(idx>0){ TBL1.rows[NRcell3].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[19],10); TBL1.rows[NRcell3].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[20],10); }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+4\\|\\s+\\d+\\|\\s+\\d+\\|\\s+.*\\|\\s+CRI:RI:PMI:CQI\\|",'g'));
+				if(idx>0){ TBL1.rows[NRcell4].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[19],10); TBL1.rows[NRcell4].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[20],10); }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+5\\|\\s+\\d+\\|\\s+\\d+\\|\\s+.*\\|\\s+CRI:RI:PMI:CQI\\|",'g'));
+				if(idx>0){ TBL1.rows[NRcell5].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[19],10); TBL1.rows[NRcell5].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[20],10); }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+6\\|\\s+\\d+\\|\\s+\\d+\\|\\s+.*\\|\\s+CRI:RI:PMI:CQI\\|",'g'));
+				if(idx>0){ TBL1.rows[NRcell6].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[19],10); TBL1.rows[NRcell6].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[20],10); }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+7\\|\\s+\\d+\\|\\s+\\d+\\|\\s+.*\\|\\s+CRI:RI:PMI:CQI\\|",'g'));
+				if(idx>0){ TBL1.rows[NRcell7].cells[RI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[19],10); TBL1.rows[NRcell7].cells[CQI_idx].innerHTML = parseInt(messageBody.substring(idx+300,idx).split("|")[20],10); }
+				*/
+			}
+
+			if(ItemKey == "[0xB173]") //LTE PDSCH-Layer,Modulation
+			{
+				if(B173_trig == 1){ B173_trig = 0;	
+				var messageBody = Item.GetItemParsedText();
+				//Plain format, valid check compare MCS between AvgMCS in QSH and MCS in PDSCH
+				var idx = messageBody.search(new RegExp( "Serving Cell Index = PCELL",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[LTEcell0].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+500,idx-100).split("MCS =")[1],10)) <=2){ TBL1.rows[LTEcell0].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+500,idx-100).split("Num Layers =")[1],10); TBL1.rows[LTEcell0].cells[Mod_idx].innerHTML = messageBody.substring(idx+500,idx-100).split("Modulation Type =")[1].split("ACK")[0]; } }
+				var idx = messageBody.search(new RegExp( "Serving Cell Index = SCC1",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[LTEcell1].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+500,idx-100).split("MCS =")[1],10)) <=2){ TBL1.rows[LTEcell1].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+500,idx-100).split("Num Layers =")[1],10); TBL1.rows[LTEcell1].cells[Mod_idx].innerHTML = messageBody.substring(idx+500,idx-100).split("Modulation Type =")[1].split("ACK")[0]; } }
+				var idx = messageBody.search(new RegExp( "Serving Cell Index = SCC2",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[LTEcell2].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+500,idx-100).split("MCS =")[1],10)) <=2){ TBL1.rows[LTEcell2].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+500,idx-100).split("Num Layers =")[1],10); TBL1.rows[LTEcell2].cells[Mod_idx].innerHTML = messageBody.substring(idx+500,idx-100).split("Modulation Type =")[1].split("ACK")[0]; } }
+				var idx = messageBody.search(new RegExp( "Serving Cell Index = SCC3",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[LTEcell3].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+500,idx-100).split("MCS =")[1],10)) <=2){ TBL1.rows[LTEcell3].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+500,idx-100).split("Num Layers =")[1],10); TBL1.rows[LTEcell3].cells[Mod_idx].innerHTML = messageBody.substring(idx+500,idx-100).split("Modulation Type =")[1].split("ACK")[0]; } }
+				var idx = messageBody.search(new RegExp( "Serving Cell Index = SCC4",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[LTEcell4].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+500,idx-100).split("MCS =")[1],10)) <=2){ TBL1.rows[LTEcell4].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+500,idx-100).split("Num Layers =")[1],10); TBL1.rows[LTEcell4].cells[Mod_idx].innerHTML = messageBody.substring(idx+500,idx-100).split("Modulation Type =")[1].split("ACK")[0]; } }
+				var idx = messageBody.search(new RegExp( "Serving Cell Index = SCC5",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[LTEcell5].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+500,idx-100).split("MCS =")[1],10)) <=2){ TBL1.rows[LTEcell5].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+500,idx-100).split("Num Layers =")[1],10); TBL1.rows[LTEcell5].cells[Mod_idx].innerHTML = messageBody.substring(idx+500,idx-100).split("Modulation Type =")[1].split("ACK")[0]; } }
+				var idx = messageBody.search(new RegExp( "Serving Cell Index = SCC6",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[LTEcell6].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+500,idx-100).split("MCS =")[1],10)) <=2){ TBL1.rows[LTEcell6].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+500,idx-100).split("Num Layers =")[1],10); TBL1.rows[LTEcell6].cells[Mod_idx].innerHTML = messageBody.substring(idx+500,idx-100).split("Modulation Type =")[1].split("ACK")[0]; } }
+				/* //QCAT format
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+\\d+\\|\\s+PCELL",'g'));
+				if(idx>0){ TBL1.rows[LTEcell0].cells[Layer_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[1]; TBL1.rows[LTEcell0].cells[Mod_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[16]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+\\d+\\|\\s+SCC1",'g'));
+				if(idx>0){ TBL1.rows[LTEcell1].cells[Layer_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[1]; TBL1.rows[LTEcell1].cells[Mod_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[16]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+\\d+\\|\\s+SCC2",'g'));
+				if(idx>0){ TBL1.rows[LTEcell2].cells[Layer_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[1]; TBL1.rows[LTEcell2].cells[Mod_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[16]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+\\d+\\|\\s+SCC3",'g'));
+				if(idx>0){ TBL1.rows[LTEcell3].cells[Layer_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[1]; TBL1.rows[LTEcell3].cells[Mod_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[16]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+\\d+\\|\\s+SCC4",'g'));
+				if(idx>0){ TBL1.rows[LTEcell4].cells[Layer_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[1]; TBL1.rows[LTEcell4].cells[Mod_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[16]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+\\d+\\|\\s+SCC5",'g'));
+				if(idx>0){ TBL1.rows[LTEcell5].cells[Layer_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[1]; TBL1.rows[LTEcell5].cells[Mod_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[16]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+\\d+\\|\\s+\\d+\\|\\s+SCC6",'g'));
+				if(idx>0){ TBL1.rows[LTEcell6].cells[Layer_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[1]; TBL1.rows[LTEcell6].cells[Mod_idx].innerHTML = messageBody.substring(idx+200,idx).split("|")[16]; }
+				*/
+				}
+			}
+
+			if(ItemKey == "[0xB887]") //NR PDSCH-Layer,Modulation
+			{
+				if(B887_trig == 1){ B887_trig = 0;	
+				var messageBody = Item.GetItemParsedText();
+				//Plain format, valid check compare MCS between AvgMCS in QSH and MCS in PDSCH
+				var idx = messageBody.search(new RegExp( "Carrier ID = 0",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[NRcell0].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+1000,idx).split("MCS =")[1],10)) <=2){ TBL1.rows[NRcell0].cells[Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Mod Type =")[1].split("H")[0]; TBL1.rows[NRcell0].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+1000, idx).split("Num Layers =")[1],10); } }
+				var idx = messageBody.search(new RegExp( "Carrier ID = 1",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[NRcell1].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+1000,idx).split("MCS =")[1],10)) <=2){ TBL1.rows[NRcell1].cells[Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Mod Type =")[1].split("H")[0]; TBL1.rows[NRcell1].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+1000, idx).split("Num Layers =")[1],10); } }
+				var idx = messageBody.search(new RegExp( "Carrier ID = 2",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[NRcell2].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+1000,idx).split("MCS =")[1],10)) <=2){ TBL1.rows[NRcell2].cells[Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Mod Type =")[1].split("H")[0]; TBL1.rows[NRcell2].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+1000, idx).split("Num Layers =")[1],10); } }
+				var idx = messageBody.search(new RegExp( "Carrier ID = 3",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[NRcell3].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+1000,idx).split("MCS =")[1],10)) <=2){ TBL1.rows[NRcell3].cells[Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Mod Type =")[1].split("H")[0]; TBL1.rows[NRcell3].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+1000, idx).split("Num Layers =")[1],10); } }
+				var idx = messageBody.search(new RegExp( "Carrier ID = 4",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[NRcell4].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+1000,idx).split("MCS =")[1],10)) <=2){ TBL1.rows[NRcell4].cells[Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Mod Type =")[1].split("H")[0]; TBL1.rows[NRcell4].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+1000, idx).split("Num Layers =")[1],10); } }
+				var idx = messageBody.search(new RegExp( "Carrier ID = 5",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[NRcell5].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+1000,idx).split("MCS =")[1],10)) <=2){ TBL1.rows[NRcell5].cells[Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Mod Type =")[1].split("H")[0]; TBL1.rows[NRcell5].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+1000, idx).split("Num Layers =")[1],10); } }
+				var idx = messageBody.search(new RegExp( "Carrier ID = 6",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[NRcell6].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+1000,idx).split("MCS =")[1],10)) <=2){ TBL1.rows[NRcell6].cells[Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Mod Type =")[1].split("H")[0]; TBL1.rows[NRcell6].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+1000, idx).split("Num Layers =")[1],10); } }
+				var idx = messageBody.search(new RegExp( "Carrier ID = 7",'g'));
+				if(idx>0){ if(abs(parseInt(TBL1.rows[NRcell7].cells[MCS_idx].innerHTML,10) - parseInt(messageBody.substring(idx+1000,idx).split("MCS =")[1],10)) <=2){ TBL1.rows[NRcell7].cells[Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("Mod Type =")[1].split("H")[0]; TBL1.rows[NRcell7].cells[Layer_idx].innerHTML = parseInt(messageBody.substring(idx+1000, idx).split("Num Layers =")[1],10); } }
+				/* //QCAT format
+				var idx = messageBody.search(new RegExp( "\\|\\s+0\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[PASS|FAIL].*[QAM|PSK].*[SISO|SMSL|SMDL|MIMO]",'g'));
+				if(idx>0){ TBL1.rows[NRcell0].cells[Mod_idx].innerHTML =  messageBody.substring(idx+400,idx).split("|")[36]; TBL1.rows[NRcell0].cells[Layer_idx].innerHTML =  messageBody.substring(idx+400, idx).split("|")[38]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+1\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[PASS|FAIL].*[QAM|PSK].*[SISO|SMSL|SMDL|MIMO]",'g'));
+				if(idx>0){ TBL1.rows[NRcell1].cells[Mod_idx].innerHTML =  messageBody.substring(idx+400,idx).split("|")[36]; TBL1.rows[NRcell1].cells[Layer_idx].innerHTML =  messageBody.substring(idx+400, idx).split("|")[38]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+2\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[PASS|FAIL].*[QAM|PSK].*[SISO|SMSL|SMDL|MIMO]",'g'));
+				if(idx>0){ TBL1.rows[NRcell2].cells[Mod_idx].innerHTML =  messageBody.substring(idx+400,idx).split("|")[36]; TBL1.rows[NRcell2].cells[Layer_idx].innerHTML =  messageBody.substring(idx+400, idx).split("|")[38]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+3\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[PASS|FAIL].*[QAM|PSK].*[SISO|SMSL|SMDL|MIMO]",'g'));
+				if(idx>0){ TBL1.rows[NRcell3].cells[Mod_idx].innerHTML =  messageBody.substring(idx+400,idx).split("|")[36]; TBL1.rows[NRcell3].cells[Layer_idx].innerHTML =  messageBody.substring(idx+400, idx).split("|")[38]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+4\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[PASS|FAIL].*[QAM|PSK].*[SISO|SMSL|SMDL|MIMO]",'g'));
+				if(idx>0){ TBL1.rows[NRcell4].cells[Mod_idx].innerHTML =  messageBody.substring(idx+400,idx).split("|")[36]; TBL1.rows[NRcell4].cells[Layer_idx].innerHTML =  messageBody.substring(idx+400, idx).split("|")[38]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+5\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[PASS|FAIL].*[QAM|PSK].*[SISO|SMSL|SMDL|MIMO]",'g'));
+				if(idx>0){ TBL1.rows[NRcell5].cells[Mod_idx].innerHTML =  messageBody.substring(idx+400,idx).split("|")[36]; TBL1.rows[NRcell5].cells[Layer_idx].innerHTML =  messageBody.substring(idx+400, idx).split("|")[38]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+6\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[PASS|FAIL].*[QAM|PSK].*[SISO|SMSL|SMDL|MIMO]",'g'));
+				if(idx>0){ TBL1.rows[NRcell6].cells[Mod_idx].innerHTML =  messageBody.substring(idx+400,idx).split("|")[36]; TBL1.rows[NRcell6].cells[Layer_idx].innerHTML =  messageBody.substring(idx+400, idx).split("|")[38]; }
+				var idx = messageBody.search(new RegExp( "\\|\\s+7\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+\\d+\\|\\s+[PASS|FAIL].*[QAM|PSK].*[SISO|SMSL|SMDL|MIMO]",'g'));
+				if(idx>0){ TBL1.rows[NRcell7].cells[Mod_idx].innerHTML =  messageBody.substring(idx+400,idx).split("|")[36]; TBL1.rows[NRcell7].cells[Layer_idx].innerHTML =  messageBody.substring(idx+400, idx).split("|")[38]; }
+				*/
+				}
+			}
+
+
+			if(ItemKey == "[0xB16D]") //LTE UL layer,mod
+			{
+				if(B16D_trig == 1){ B16D_trig = 0;	
+				var messageBody = Item.GetItemParsedText();	
+				//Plain format
+				var idx=messageBody.search(new RegExp( "Chan Type\\s+=\\s+PUSCH\\s+PUSCH Tx Report {\\s+Cell Index\\s+=\\s+0",'g'));						
+				if(idx>0){ TBL1.rows[LTEcell0].cells[UL_Layer_idx].innerHTML = parseInt(messageBody.substring(idx+2000,idx).split("Num Antenna")[1].split("=")[1],10); TBL1.rows[LTEcell0].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("Modulation Type")[1].split("=")[1].split("CC")[0]; }
+				var idx=messageBody.search(new RegExp( "Chan Type\\s+=\\s+PUSCH\\s+PUSCH Tx Report {\\s+Cell Index\\s+=\\s+1",'g'));						
+				if(idx>0){ TBL1.rows[LTEcell1].cells[UL_Layer_idx].innerHTML = parseInt(messageBody.substring(idx+2000,idx).split("Num Antenna")[1].split("=")[1],10); TBL1.rows[LTEcell1].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("Modulation Type")[1].split("=")[1].split("CC")[0]; }
+				var idx=messageBody.search(new RegExp( "Chan Type\\s+=\\s+PUSCH\\s+PUSCH Tx Report {\\s+Cell Index\\s+=\\s+2",'g'));						
+				if(idx>0){ TBL1.rows[LTEcell2].cells[UL_Layer_idx].innerHTML = parseInt(messageBody.substring(idx+2000,idx).split("Num Antenna")[1].split("=")[1],10); TBL1.rows[LTEcell2].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("Modulation Type")[1].split("=")[1].split("CC")[0]; }
+				var idx=messageBody.search(new RegExp( "Chan Type\\s+=\\s+PUSCH\\s+PUSCH Tx Report {\\s+Cell Index\\s+=\\s+3",'g'));						
+				if(idx>0){ TBL1.rows[LTEcell3].cells[UL_Layer_idx].innerHTML = parseInt(messageBody.substring(idx+2000,idx).split("Num Antenna")[1].split("=")[1],10); TBL1.rows[LTEcell3].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("Modulation Type")[1].split("=")[1].split("CC")[0]; }
+				/* //QCAT format
+				var idx=messageBody.search(new RegExp( "Chan Type\\s+=\\s+PUSCH\\s+Cell Index\\s+=\\s+0",'g'));						
+				if(idx>0){ TBL1.rows[LTEcell0].cells[UL_Layer_idx].innerHTML = parseInt(messageBody.substring(idx+2000,idx).split("Num Antenna")[1].split("=")[1],10); TBL1.rows[LTEcell0].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("Modulation Type")[1].split("=")[1].split("CC")[0]; }
+				var idx=messageBody.search(new RegExp( "Chan Type\\s+=\\s+PUSCH\\s+Cell Index\\s+=\\s+1",'g'));						
+				if(idx>0){ TBL1.rows[LTEcell1].cells[UL_Layer_idx].innerHTML = parseInt(messageBody.substring(idx+2000,idx).split("Num Antenna")[1].split("=")[1],10); TBL1.rows[LTEcell1].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("Modulation Type")[1].split("=")[1].split("CC")[0]; }
+				var idx=messageBody.search(new RegExp( "Chan Type\\s+=\\s+PUSCH\\s+Cell Index\\s+=\\s+2",'g'));						
+				if(idx>0){ TBL1.rows[LTEcell2].cells[UL_Layer_idx].innerHTML = parseInt(messageBody.substring(idx+2000,idx).split("Num Antenna")[1].split("=")[1],10); TBL1.rows[LTEcell2].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("Modulation Type")[1].split("=")[1].split("CC")[0]; }
+				var idx=messageBody.search(new RegExp( "Chan Type\\s+=\\s+PUSCH\\s+Cell Index\\s+=\\s+3",'g'));						
+				if(idx>0){ TBL1.rows[LTEcell3].cells[UL_Layer_idx].innerHTML = parseInt(messageBody.substring(idx+2000,idx).split("Num Antenna")[1].split("=")[1],10); TBL1.rows[LTEcell3].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("Modulation Type")[1].split("=")[1].split("CC")[0]; }
+				*/
+				}
+			}
+
+			if(ItemKey == "[0xB883]") //NR UL layer,mod
+			{				
+				if(B883_trig == 1){ B883_trig = 0;	
+				var messageBody = Item.GetItemParsedText();
+				//Plain format
+				var idx=messageBody.search(new RegExp( "Carriers\\[0\\]",'g'));  
+  				if(idx>0 && messageBody.substring(idx+2000,idx).indexOf("PUSCH")!=-1 && messageBody.substring(idx+2000,idx).indexOf("Carrier ID =")!=-1 && messageBody.substring(idx+2000,idx).indexOf("TX Mode =")!=-1 && messageBody.substring(idx+2000,idx).indexOf("MOD_TYPE =")!=-1){
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==0){ TBL1.rows[NRcell0].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; 	TBL1.rows[NRcell0].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==1){ TBL1.rows[NRcell1].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell1].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==2){ TBL1.rows[NRcell2].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell2].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==3){ TBL1.rows[NRcell3].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell3].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+				}
+				var idx=messageBody.search(new RegExp( "Carriers\\[1\\]",'g'));  
+				if(idx>0 && messageBody.substring(idx+2000,idx).indexOf("PUSCH")!=-1 && messageBody.substring(idx+2000,idx).indexOf("Carrier ID =")!=-1 && messageBody.substring(idx+2000,idx).indexOf("TX Mode =")!=-1 && messageBody.substring(idx+2000,idx).indexOf("MOD_TYPE =")!=-1){
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==0){ TBL1.rows[NRcell0].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; 	TBL1.rows[NRcell0].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==1){ TBL1.rows[NRcell1].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell1].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==2){ TBL1.rows[NRcell2].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell2].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==3){ TBL1.rows[NRcell3].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell3].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+				}
+				var idx=messageBody.search(new RegExp( "Carriers\\[2\\]",'g'));  
+				if(idx>0 && messageBody.substring(idx+2000,idx).indexOf("PUSCH")!=-1 && messageBody.substring(idx+2000,idx).indexOf("Carrier ID =")!=-1 && messageBody.substring(idx+2000,idx).indexOf("TX Mode =")!=-1 && messageBody.substring(idx+2000,idx).indexOf("MOD_TYPE =")!=-1){
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==0){ TBL1.rows[NRcell0].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; 	TBL1.rows[NRcell0].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==1){ TBL1.rows[NRcell1].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell1].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==2){ TBL1.rows[NRcell2].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell2].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==3){ TBL1.rows[NRcell3].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell3].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+				}
+				var idx=messageBody.search(new RegExp( "Carriers\\[3\\]",'g'));  
+				if(idx>0 && messageBody.substring(idx+2000,idx).indexOf("PUSCH")!=-1 && messageBody.substring(idx+2000,idx).indexOf("Carrier ID =")!=-1 && messageBody.substring(idx+2000,idx).indexOf("TX Mode =")!=-1 && messageBody.substring(idx+2000,idx).indexOf("MOD_TYPE =")!=-1){
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==0){ TBL1.rows[NRcell0].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; 	TBL1.rows[NRcell0].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==1){ TBL1.rows[NRcell1].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell1].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==2){ TBL1.rows[NRcell2].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell2].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+					if(parseInt(messageBody.substring(idx+2000,idx).split("Carrier ID =")[1],10)==3){ TBL1.rows[NRcell3].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+2000,idx).split("TX Mode =")[1].split("RV")[0]; TBL1.rows[NRcell3].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+2000,idx).split("MOD_TYPE =")[1].split("RN")[0]; }
+				}
+				/* //QCAT format
+				var idx = messageBody.search(new RegExp( "kHz\\|\\s+\\d+\\|\\s+\\d+\\|\\s+0\\|\\s+.*\\|\\s+PUSCH" , 'g'));						
+				if(idx>0){ TBL1.rows[NRcell0].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+1000,idx).split("|")[21]; TBL1.rows[NRcell0].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("|")[48]; }
+				var idx = messageBody.search(new RegExp( "kHz\\|\\s+\\d+\\|\\s+\\d+\\|\\s+1\\|\\s+.*\\|\\s+PUSCH" , 'g'));						
+				if(idx>0){ TBL1.rows[NRcell1].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+1000,idx).split("|")[21]; TBL1.rows[NRcell1].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("|")[48]; }
+				var idx = messageBody.search(new RegExp( "kHz\\|\\s+\\d+\\|\\s+\\d+\\|\\s+2\\|\\s+.*\\|\\s+PUSCH" , 'g'));						
+				if(idx>0){ TBL1.rows[NRcell2].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+1000,idx).split("|")[21]; TBL1.rows[NRcell2].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("|")[48]; }
+				var idx = messageBody.search(new RegExp( "kHz\\|\\s+\\d+\\|\\s+\\d+\\|\\s+3\\|\\s+.*\\|\\s+PUSCH" , 'g'));						
+				if(idx>0){ TBL1.rows[NRcell3].cells[UL_Layer_idx].innerHTML = messageBody.substring(idx+1000,idx).split("|")[21]; TBL1.rows[NRcell3].cells[UL_Mod_idx].innerHTML = messageBody.substring(idx+1000,idx).split("|")[48]; }
+				*/
+				}
+			}
+
+		} 
+	}   
+	PrevIndex = CurrIndex;
+}
+
+
+function Capture_TBL2(){
+	TBL2.rows[FileName].cells[1].innerHTML = TBL1.rows[FileName].cells[1].innerHTML; TBL2.rows[CAcfg].cells[1].innerHTML = TBL1.rows[CAcfg].cells[1].innerHTML;	TBL2.rows[CADB].cells[1].innerHTML = TBL1.rows[CADB].cells[1].innerHTML;			
+	Capture_TBL2_cell(LTEcell0); Capture_TBL2_cell(LTEcell1); Capture_TBL2_cell(LTEcell2); Capture_TBL2_cell(LTEcell3); Capture_TBL2_cell(LTEcell4); Capture_TBL2_cell(LTEcell5); Capture_TBL2_cell(LTEcell6);
+	Capture_TBL2_cell(NRcell0); Capture_TBL2_cell(NRcell1); Capture_TBL2_cell(NRcell2); Capture_TBL2_cell(NRcell3); Capture_TBL2_cell(NRcell4);	Capture_TBL2_cell(NRcell5);	Capture_TBL2_cell(NRcell6);	Capture_TBL2_cell(NRcell7);
+	TBL2.rows[LTEPHYTot].cells[PDCPT_idx].innerHTML = TBL1.rows[LTEPHYTot].cells[PDCPT_idx].innerHTML; 
+	TBL2.rows[LTERLCTot].cells[PDCPT_idx].innerHTML = TBL1.rows[LTERLCTot].cells[PDCPT_idx].innerHTML; 
+	TBL2.rows[LTEPDCPTot].cells[PDCPT_idx].innerHTML = TBL1.rows[LTEPDCPTot].cells[PDCPT_idx].innerHTML; 
+	TBL2.rows[LTEIPATot].cells[PDCPT_idx].innerHTML = TBL1.rows[LTEIPATot].cells[PDCPT_idx].innerHTML; 
+	TBL2.rows[NRPHYTot].cells[PDCPT_idx].innerHTML = TBL1.rows[NRPHYTot].cells[PDCPT_idx].innerHTML; 
+	TBL2.rows[NRRLCTot].cells[PDCPT_idx].innerHTML = TBL1.rows[NRRLCTot].cells[PDCPT_idx].innerHTML; 
+	TBL2.rows[NRPDCPTot].cells[PDCPT_idx].innerHTML = TBL1.rows[NRPDCPTot].cells[PDCPT_idx].innerHTML;
+	TBL2.rows[NRIPATot].cells[PDCPT_idx].innerHTML = TBL1.rows[NRIPATot].cells[PDCPT_idx].innerHTML; 	
+	document.getElementById("timestamp_maxdl").innerHTML = "<font color='black', size=2><left>"+"Timestamp: "+timestamp_maxdl+"</center></font>";
+}
+function Capture_TBL2_cell (cell){
+	TBL2.rows[cell].cells[Scell_state].innerHTML =  TBL1.rows[cell].cells[Scell_state].innerHTML ;
+	TBL2.rows[cell].cells[Band_idx].innerHTML =  TBL1.rows[cell].cells[Band_idx].innerHTML ;
+	TBL2.rows[cell].cells[BW_idx].innerHTML =  TBL1.rows[cell].cells[BW_idx].innerHTML ;
+	TBL2.rows[cell].cells[ARFCN_idx].innerHTML =  TBL1.rows[cell].cells[ARFCN_idx].innerHTML ;
+	TBL2.rows[cell].cells[PCI_idx].innerHTML =  TBL1.rows[cell].cells[PCI_idx].innerHTML ;
+	TBL2.rows[cell].cells[RSRP_idx].innerHTML =  TBL1.rows[cell].cells[RSRP_idx].innerHTML ;
+	TBL2.rows[cell].cells[RSRQ_idx].innerHTML =  TBL1.rows[cell].cells[RSRQ_idx].innerHTML ;
+	TBL2.rows[cell].cells[CQI_idx].innerHTML =  TBL1.rows[cell].cells[CQI_idx].innerHTML ;
+	TBL2.rows[cell].cells[RI_idx].innerHTML =  TBL1.rows[cell].cells[RI_idx].innerHTML ;
+	//TBL2.rows[cell].cells[Pathloss_idx].innerHTML =  TBL1.rows[cell].cells[Pathloss_idx].innerHTML ;
+	//TBL2.rows[cell].cells[TxPower_idx].innerHTML =  TBL1.rows[cell].cells[TxPower_idx].innerHTML ;
+	//TBL2.rows[cell].cells[PHR_idx].innerHTML =  TBL1.rows[cell].cells[PHR_idx].innerHTML ;
+	//TBL2.rows[cell].cells[MTPL_idx].innerHTML =  TBL1.rows[cell].cells[MTPL_idx].innerHTML ;		
+	TBL2.rows[cell].cells[MCS_idx].innerHTML =  TBL1.rows[cell].cells[MCS_idx].innerHTML ;
+	TBL2.rows[cell].cells[BLER_idx].innerHTML =  TBL1.rows[cell].cells[BLER_idx].innerHTML ;
+	TBL2.rows[cell].cells[Layer_idx].innerHTML =  TBL1.rows[cell].cells[Layer_idx].innerHTML ;
+	TBL2.rows[cell].cells[RB_idx].innerHTML =  TBL1.rows[cell].cells[RB_idx].innerHTML ;
+	TBL2.rows[cell].cells[Mod_idx].innerHTML =  TBL1.rows[cell].cells[Mod_idx].innerHTML ;
+	TBL2.rows[cell].cells[PHYT_idx].innerHTML =  TBL1.rows[cell].cells[PHYT_idx].innerHTML ;
+}
+
+
+function Capture_TBL3(){
+	TBL3.rows[FileName].cells[1].innerHTML = TBL1.rows[FileName].cells[1].innerHTML; TBL3.rows[CAcfg].cells[1].innerHTML = TBL1.rows[CAcfg].cells[1].innerHTML;	TBL3.rows[CADB].cells[1].innerHTML = TBL1.rows[CADB].cells[1].innerHTML;			
+	Capture_TBL3_cell(LTEcell0); Capture_TBL3_cell(LTEcell1); Capture_TBL3_cell(LTEcell2); Capture_TBL3_cell(LTEcell3); Capture_TBL3_cell(LTEcell4); Capture_TBL3_cell(LTEcell5); Capture_TBL3_cell(LTEcell6);
+	Capture_TBL3_cell(NRcell0); Capture_TBL3_cell(NRcell1); Capture_TBL3_cell(NRcell2); Capture_TBL3_cell(NRcell3); Capture_TBL3_cell(NRcell4);	Capture_TBL3_cell(NRcell5);	Capture_TBL3_cell(NRcell6);	Capture_TBL3_cell(NRcell7);
+	TBL3.rows[LTEPHYTot].cells[PDCPT_idx].innerHTML = TBL1.rows[LTEPHYTot].cells[UL_PDCPT_idx].innerHTML; 
+	TBL3.rows[LTEPDCPTot].cells[PDCPT_idx].innerHTML = TBL1.rows[LTEPDCPTot].cells[UL_PDCPT_idx].innerHTML; 
+	TBL3.rows[NRPHYTot].cells[PDCPT_idx].innerHTML = TBL1.rows[NRPHYTot].cells[UL_PDCPT_idx].innerHTML; 
+	TBL3.rows[NRPDCPTot].cells[PDCPT_idx].innerHTML = TBL1.rows[NRPDCPTot].cells[UL_PDCPT_idx].innerHTML;
+	document.getElementById("timestamp_maxul").innerHTML = "<font color='black', size=2><left>"+"Timestamp: "+timestamp_maxul+"</center></font>";
+}
+function Capture_TBL3_cell (cell){
+	TBL3.rows[cell].cells[Scell_state].innerHTML =  TBL1.rows[cell].cells[Scell_state].innerHTML ;
+	TBL3.rows[cell].cells[Band_idx].innerHTML =  TBL1.rows[cell].cells[Band_idx].innerHTML ;
+	TBL3.rows[cell].cells[BW_idx].innerHTML =  TBL1.rows[cell].cells[BW_idx].innerHTML ;
+	TBL3.rows[cell].cells[ARFCN_idx].innerHTML =  TBL1.rows[cell].cells[ARFCN_idx].innerHTML ;
+	TBL3.rows[cell].cells[PCI_idx].innerHTML =  TBL1.rows[cell].cells[PCI_idx].innerHTML ;
+	TBL3.rows[cell].cells[RSRP_idx].innerHTML =  TBL1.rows[cell].cells[RSRP_idx].innerHTML ;
+	TBL3.rows[cell].cells[RSRQ_idx].innerHTML =  TBL1.rows[cell].cells[RSRQ_idx].innerHTML ;
+	TBL3.rows[cell].cells[CQI_idx].innerHTML =  TBL1.rows[cell].cells[CQI_idx].innerHTML ;
+	TBL3.rows[cell].cells[RI_idx].innerHTML =  TBL1.rows[cell].cells[RI_idx].innerHTML ;
+	//TBL3.rows[cell].cells[Pathloss_idx].innerHTML =  TBL1.rows[cell].cells[Pathloss_idx].innerHTML ;
+	//TBL3.rows[cell].cells[TxPower_idx].innerHTML =  TBL1.rows[cell].cells[TxPower_idx].innerHTML ;
+	//TBL3.rows[cell].cells[PHR_idx].innerHTML =  TBL1.rows[cell].cells[PHR_idx].innerHTML ;
+	//TBL3.rows[cell].cells[MTPL_idx].innerHTML =  TBL1.rows[cell].cells[MTPL_idx].innerHTML ;		
+	TBL3.rows[cell].cells[MCS_idx].innerHTML =  TBL1.rows[cell].cells[UL_MCS_idx].innerHTML ;
+	TBL3.rows[cell].cells[BLER_idx].innerHTML =  TBL1.rows[cell].cells[UL_BLER_idx].innerHTML ;
+	TBL3.rows[cell].cells[Layer_idx].innerHTML =  TBL1.rows[cell].cells[UL_Layer_idx].innerHTML ;
+	TBL3.rows[cell].cells[RB_idx].innerHTML =  TBL1.rows[cell].cells[UL_RB_idx].innerHTML ;
+	TBL3.rows[cell].cells[Mod_idx].innerHTML =  TBL1.rows[cell].cells[UL_Mod_idx].innerHTML ;
+	TBL3.rows[cell].cells[PHYT_idx].innerHTML =  TBL1.rows[cell].cells[UL_PHYT_idx].innerHTML ;
+}
+
+
+function addRow(){ var Box_row = Box.insertRow(Box.rows.length); var cell = Box_row.insertCell(); cell.innerHTML = "<td>-</td>"; }
+function timestamp_in_sec()
+{
+	var split = timestamp.split(":");
+	var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) +(parseFloat( parseInt(split[2].split(".")[1],10) / 1000)); //unit of seconds
+	return timestamp_sec_unit;		
+}
+
+//3gpp table
+function ConvertPHRidxtoDB (AvgPHRidx)
+{
+	if(AvgPHRidx == 0){ return "n/a"; }  
+	else if(AvgPHRidx <= 55){ return AvgPHRidx-23; }
+	else if(AvgPHRidx == 56){ return  25; } 
+	else if(AvgPHRidx == 57){ return  27; } 
+	else if(AvgPHRidx == 58){ return  29; }
+	else if(AvgPHRidx == 59){ return  31; }
+	else if(AvgPHRidx == 60){ return  33; } 
+	else if(AvgPHRidx == 61){ return  35; }
+	else if(AvgPHRidx == 62){ return  37; }
+	else if(AvgPHRidx == 63){ return  ">=38"; }
+	else { return "error"; }
+}
+function NR_Arfcn_to_Band (arfcn)
+{
+	if(arfcn <= 130400){ return 71; } //sub-6
+	else if(arfcn <= 160600){	return 28; }
+	else if(arfcn <= 164200){	return 20; }
+	else if(arfcn <= 178800){	return 5;  }
+	else if(arfcn <= 192000){	return 8;  }
+	else if(arfcn <= 286400){	return 51; }
+	else if(arfcn >= 286400 && arfcn <= 303400){ return 50; }
+	else if(arfcn <= 303600){	return 74; }
+	else if(arfcn <= 376000){	return 3;  }
+	else if(arfcn <= 398000){	return 2;  }
+	else if(arfcn <= 404000){	return 70; }
+	else if(arfcn >= 422000 && arfcn <= 434000){ return 1;  }
+	else if(arfcn <= 440000){	return 66; }
+	else if(arfcn >= 499200 && arfcn <= 537999){ return 41; }
+	else if(arfcn >= 620000 && arfcn <= 653333){ return 78; }
+	else if(arfcn <= 2070832){	return 258;	} //mmWave
+	else if(arfcn <= 2084999){	return 261;	}
+	else if(arfcn <= 2279165){	return 260;	}
+	else{ return "n/a"; } //not found	
+}
+
+function LTE_EARFCN_to_Band (arfcn)
+{
+	if(arfcn <= 599){ return 1; } //fdd
+	else if(arfcn <= 1199){		return 2; }
+	else if(arfcn <= 1949){		return 3; }
+	else if(arfcn <= 2399){		return 4; }
+	else if(arfcn <= 2649){		return 5; }
+	else if(arfcn <= 2749){		return 6; }
+	else if(arfcn <= 3449){		return 7; }
+	else if(arfcn <= 3799){		return 8; }
+	else if(arfcn <= 4149){		return 9; }
+	else if(arfcn <= 4749){		return 10; }
+	else if(arfcn <= 4949){		return 11; }
+	else if(arfcn <= 5179){ 	return 12; }
+	else if(arfcn <= 5279){		return 13; }
+	else if(arfcn <= 5379){		return 14; }
+	else if(arfcn <= 5849){		return 17; }
+	else if(arfcn <= 5999){		return 18; }
+	else if(arfcn <= 6149){		return 19; }
+	else if(arfcn <= 6449){		return 20; }
+	else if(arfcn <= 6599){		return 21; }
+	else if(arfcn <= 7399){		return 22; }
+	else if(arfcn <= 7699){ 	return 23; }
+	else if(arfcn <= 8039){ 	return 24; }
+	else if(arfcn <= 8689){ 	return 25; }
+	else if(arfcn <= 9039){ 	return 26; }
+	else if(arfcn <= 9209){ 	return 27; }
+	else if(arfcn <= 9659){ 	return 28; }
+	else if(arfcn <= 9769){ 	return 29; }
+	else if(arfcn <= 9869){ 	return 30; }
+	else if(arfcn <= 9919){ 	return 31; }
+	else if(arfcn <= 10359){ 	return 32; }
+	else if(arfcn >= 36000 && arfcn <= 36199){ return 33; } //tdd
+	else if(arfcn <= 36349){ 	return 34; }
+	else if(arfcn <= 36949){ 	return 35; }
+	else if(arfcn <= 37549){ 	return 36; }
+	else if(arfcn <= 37749){ 	return 37; }
+	else if(arfcn <= 38249){ 	return 38; }
+	else if(arfcn <= 38649){ 	return 39; }
+	else if(arfcn <= 39649){ 	return 40; }
+	else if(arfcn <= 41589){ 	return 41; }
+	else if(arfcn <= 43589){ 	return 42; }
+	else if(arfcn <= 45589){ 	return 43; }
+	else if(arfcn <= 46589){ 	return 44; }
+	else if(arfcn <= 46789){ 	return 45; }
+	else if(arfcn <= 54539){ 	return 46; }
+	else if(arfcn <= 55239){	return 47; }
+	else if(arfcn <= 56739){ 	return 48; }
+	else if(arfcn <= 58239){	return 49; }
+	else if(arfcn <= 59089){ 	return 50; }
+	else if(arfcn <= 59139){ 	return 51; }
+	else if(arfcn <= 60139){ 	return 52; }
+	else if(arfcn >= 65536 && arfcn <= 66435){ return 65; } //fdd
+	else if(arfcn <= 67335){ 	return 66; }
+	else if(arfcn <= 67535){ 	return 67; }
+	else if(arfcn <= 67835){ 	return 68; }
+	else if(arfcn <= 68335){ 	return 69; }
+	else if(arfcn <= 68585){ 	return 70; }
+	else if(arfcn <= 68935){ 	return 71; }
+	else if(arfcn <= 68985){ 	return 72; }
+	else if(arfcn <= 69035){	return 73; }
+	else if(arfcn <= 69465){ 	return 74; }
+	else if(arfcn <= 70315){	return 75; }
+	else if(arfcn <= 70365){	return 76; }
+	else if(arfcn <= 70545){ 	return 85; }
+	else{ return "n/a"; } //not found
+}
+
+
+//math function
+function Log10(x){ return Math.log(x)/Math.LN10 ; }
+function dec2hex(d){ return d.toString(16); }
+function hex2dec(h){ return parseInt(h,16); } 
+function bin2dec(b){ var i; var s=0;	var l=strlen(b); for(i=1; i<=l; i++){ var pow2 = Math.pow( 2, l-i); s = s + b[i-1] * pow2; } return s; }
+function strlen(s){ return s.length; } 
+function avg(arr){ if(typeof(arr) === "number"){ return arr; } var a = sum(arr) / arr.length; return a; }
+function abs(a){ if(a<0) return a*-1; return a; }
+function sum(arr){ if(typeof(arr) === "number" ){ return arr; } var s = 0; for( var i in arr ){ s += arr[i]; } return s; }
+function stdev(arr){ if(typeof(arr) === "number" ){ return 0; } var mean = avg(arr); var ret = 0; for( var i in arr ){ ret += Math.pow(arr[i] - mean, 2) / ( arr.length - 1 ); } return Math.sqrt(ret); }
+function confidence95(arr){ if(typeof(arr) === "number" ){ return 0; } return 1.96 * stdev(arr) / Math.sqrt(arr.length) }
+function stdevPercent(arr){ return stdev(arr) / avg(arr); }
+
+
+</script>
+</body>
+</html>
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->

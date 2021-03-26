@@ -1,0 +1,641 @@
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+<!-- #Version History::LG+GraphNW.html
+v0.9: 2020-10-03, Beta version initial release
+v1.0: 2020-11-20, v1.0 pre-release. NOTE:Use Plain format (not QCAT format, QXDM > Options > Parsing option > QCAT format uncheck)
+v1.0: 2021-01-15, v1.0 official release. Working on QXDM5
+-->
+<!doctype html public "-//w3c//dtd xhtml 1.0 strict//en" "http://www.w3.org/tr/xhtml1/dtd/xhtml1-strict.dtd">
+<html>
+<head>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5" />
+<meta name="DMViewName" content="LG+GraphNW v1.0" />
+<meta name="DMViewWidth" content="5000" />
+<meta name="DMViewHeight" content="2000" />
+<link rel="stylesheet" href="QXDMStyle.css" />
+<style type="text/css">
+th{ text-align : center; padding-left : 3; padding-right : 3; }   
+td{ text-align : center; padding-left : 3; padding-right : 3; }   
+td.shaded{ text-align : center; padding-left : 3; padding-right : 3; cursor : pointer }
+</style>
+</head>
+<body onunload="Unregister()" onload="Register()">
+
+<label>Sampling:</label><input type="text" size="1" id="samplingInput" value="0.1" /><label>sec</label>
+<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+<label>Window:</label><input type="text" size="1" id="windowInput" value="120" /><label>sec</label>
+<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+
+<div id="GRAPH0"><style>#GRAPH0 { height: 250px; width: 100%; }</style></div>
+<div id="GRAPH1"><style>#GRAPH1 { height: 250px; width: 100%; }</style></div>
+<div id="GRAPH2"><style>#GRAPH2 { height: 250px; width: 100%; }</style></div>
+<div id="GRAPH3"><style>#GRAPH3 { height: 250px; width: 100%; }</style></div>
+
+<div id="GRAPH10"><style>#GRAPH10 { height: 250px; width: 100%; }</style></div> 
+<div id="GRAPH11"><style>#GRAPH11 { height: 250px; width: 100%; }</style></div> 
+<div id="GRAPH12"><style>#GRAPH12 { height: 250px; width: 100%; }</style></div>
+<div id="GRAPH13"><style>#GRAPH13 { height: 250px; width: 100%; }</style></div>
+<div id="GRAPH14"><style>#GRAPH14 { height: 250px; width: 100%; }</style></div>
+
+<p id="timestamp"></p>
+
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label">Debug Box</div>
+<table width="100%" id="Box">        	
+<tr><th>Time Stamp | Key | Name | Summary</th></tr>
+<tr><td>-</td></tr>
+</table>	    				
+</td.left></tr>
+</table>
+	
+<p id="LG"></p>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/jscript">
+google.charts.load('current', {'packages':['corechart']});
+document.getElementById("LG").innerHTML = "<font color='gray', size=2><center>"+"Copyright by LG Electronics. All Rights Reserved"+"</center></font>";
+
+var IQXDM2;
+var Handle             = 0xFFFFFFFF;
+var UPDATE_MS          = 1000;
+var gMainTickID        = 0;
+var PrevIndex          = -1;
+var SECONDS_PER_DAY = 86400.0;
+var hex = new Array();
+var n;
+var row = 1;
+var ON  = 1;
+var OFF = 0;
+
+var windowsize = 0;
+
+var timestamp = "-";
+var timestamp_qsh = 0;
+var timestamp_sec = 0;
+var timestamp_sec_p = 0;
+
+var cnt = 0;
+var TIME_STAMP = new Array();
+
+//---- NW ----//
+var LTE_PCI = -1;
+var NR_PCI = -1;
+var PCI_4G = new Array();
+var PCI_5G = new Array();
+var LTE_ARFCN = -1;
+var NR_ARFCN = -1;
+var ARFCN_4G = new Array();
+var ARFCN_5G = new Array();
+var LTE_BAND = -1;
+var NR_BAND = -1;
+var BAND_4G = new Array();
+var BAND_5G = new Array();
+var EPS_ID = 0;
+var DL_PATH = -1;
+var UL_PATH = -1;
+var PATH_DL = new Array();
+var PATH_UL = new Array();
+
+//---- RSRP ----//
+var LTE_RSRP = 0;
+var LTE_RSRQ = 0;
+var NR_RSRP = 0;
+var NR_RSRQ = 0;
+var RSRP_4G = new Array();
+var RSRP_5G = new Array();
+var RSRQ_4G = new Array();
+var RSRQ_5G = new Array();	
+var B193_trig = 0;
+var B97F_trig = 0;
+
+//---- DL ----//
+var NR_DL_TPUT_PHY;
+var LTE_DL_TPUT_PHY;
+var RATE_DL_4G = new Array();
+var RATE_DL_5G = new Array();
+
+//---- UL ----//
+var NR_UL_TPUT_PHY;
+var LTE_UL_TPUT_PHY;	
+var RATE_UL_4G = new Array();
+var RATE_UL_5G = new Array();
+
+
+//---- VoLTE ----//
+var rtpcnt = 0;
+var RTP_TIME_STAMP = new Array();
+var RTP = new Array();
+
+
+function Register()
+{
+	IQXDM2 = window.external;
+	if (IQXDM2 == null){ window.document.write( "<br />QXDM does not support required interface" ); return; }
+
+	Handle = IQXDM2.RegisterClient( "", 0 );
+	if (Handle == 0xFFFFFFFF){ window.document.write( "<br />Unable to register as client" ); }   
+
+	var clientObject = IQXDM2.ConfigureClientByKeys( Handle );
+	if (clientObject == null){ window.document.write("<br />Failed to get client interface pointer"); return; }
+
+	clientObject.AddQshTrace(76,4,0); 
+	clientObject.AddQshTrace(76,4,2); 		
+	clientObject.AddMessage(5,1); 	
+	clientObject.AddMessage(5,3); 	
+	//clientObject.AddQshTrace(76,4,0); 
+	//clientObject.AddQshTrace(76,4,2);	
+	//clientObject.AddLog(0xB087);
+	//clientObject.AddLog(0xB097);
+	clientObject.AddLog(0xB0C2); 
+	clientObject.AddLog(0xB193); 
+	clientObject.AddLog(0xB825); 
+	//clientObject.AddLog(0xB842); //--PDCP aggregated value
+	//clientObject.AddLog(0xB84D);
+	//clientObject.AddLog(0xB868);
+	//--clientObject.AddLog(0xB881); //--incorrect
+	clientObject.AddLog(0xB88A);
+	clientObject.AddLog(0xB97F);	
+	clientObject.AddEvent(3252);	
+	
+	clientObject.CommitConfig();     
+	gMainTickID = setInterval( 'ProcessLogs()', UPDATE_MS );  
+}
+
+function Unregister()
+{
+	if (gMainTickID != 0){ window.clearInterval( gMainTickID ); gMainTickID = 0; }
+   	if (Handle != 0xFFFFFFFF){ IQXDM2.UnregisterClient( Handle ); }
+}
+
+function ProcessLogs()
+{   
+	var CurrIndex = IQXDM2.GetClientItemCount( Handle ) - 1;
+	if (PrevIndex > CurrIndex){ PrevIndex = -1; }
+	if (CurrIndex < 0 || CurrIndex == PrevIndex){ return; }  
+	
+	windowsize = windowInput.value;
+   
+	for (var i = PrevIndex + 1; i <= CurrIndex; i++)
+	{
+		var Item = IQXDM2.GetClientItem( Handle, i );
+
+		if (Item != null)
+		{
+			var ItemKey = Item.GetItemKeyText();
+			timestamp =  Item.GetItemSpecificTimestampText( false, true );
+			timestamp_sec = timestamp_in_sec();									
+			document.getElementById("timestamp").innerHTML = "<font color='black', size=2><center>"+"Current Timestamp: "+timestamp+"</center></font>";
+
+			if(timestamp_sec - timestamp_sec_p >= samplingInput.value || timestamp_sec - timestamp_sec_p < 0) //read log packets at every sampling interval
+			{
+				timestamp_sec_p = timestamp_sec;				
+				B193_trig = 1;
+				B97F_trig = 1;	
+			}
+
+			if(ItemKey == "[0xB0C2]")
+			{				
+				var messageBody = Item.GetItemParsedText();
+				LTE_PCI = parseInt(messageBody.split("Physical cell ID =")[1],10); 
+				LTE_ARFCN = parseInt(messageBody.split("DL FREQ =")[1],10); 
+				LTE_BAND = "B"+parseInt(messageBody.split("Freq Band Indicator =")[1],10); 
+				//LTE_BW = parseInt(messageBody.split("DL Bandwidth =")[1],10)+"MHz"; 				
+			}
+			
+			if(ItemKey == "[0xB825]")
+			{
+				var messageBody = Item.GetItemParsedText();
+				var idx=messageBody.search(new RegExp("NR5G Serving Cell Info\\[0\\]",'g'));
+				if(idx>0 && (messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("MMW")!=-1 || messageBody.substring(idx+400, idx).split("Band Type =")[1].split("Bandwidth")[0].indexOf("SUB6")!=-1)){ 
+					var msg=messageBody.substring(idx+400, idx); 
+					NR_PCI = parseInt(msg.split("Cell Id =")[1],10); 
+					NR_ARFCN = parseInt(msg.split("DL Arfcn =")[1],10); 
+					NR_BAND = "n"+parseInt(msg.split("Band =")[1],10); 
+					//NR_BW = msg.split("DL Carrier Bandwidth =")[1].split("Hz")[0]+"Hz"; 					
+				}
+			}
+			
+
+			if(ItemKey == "[0xB193]")
+			{
+				if(B193_trig == 1){ B193_trig = 0;		
+				var messageBody = Item.GetItemParsedText();
+				var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+PCell",'g'));
+				if(idx>0){ 
+					LTE_RSRP = messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0]; 
+					LTE_RSRQ = messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0]; 
+				}
+				}				
+			}
+
+			if(ItemKey == "[0xB97F]")
+			{
+				if(B97F_trig == 1){ B97F_trig = 0;	
+				var messageBody = Item.GetItemParsedText();
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[0\\]",'g'));							
+				if(idx>0){ 
+					NR_RSRP = messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0]; 
+					NR_RSRQ = messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0];  							
+				}
+				}
+			}
+			
+
+			if(ItemKey == "[0076/04/0]" || ItemKey == "[0076/04/2]")
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();		
+				if( summary.indexOf("===== ANALYSIS #") !=-1 && timestamp_qsh != 0)
+				{	
+					TIME_STAMP[cnt] = timestamp_qsh;
+
+					PCI_4G[cnt] = LTE_PCI;
+					PCI_5G[cnt] = NR_PCI;	
+					ARFCN_4G[cnt] = LTE_ARFCN;
+					ARFCN_5G[cnt] = NR_ARFCN;	
+					BAND_4G[cnt] = LTE_BAND;
+					BAND_5G[cnt] = NR_BAND;						
+					PATH_DL[cnt] = DL_PATH;
+					PATH_UL[cnt] = UL_PATH;					
+
+					RSRP_4G[cnt] = LTE_RSRP;
+					RSRP_5G[cnt] = NR_RSRP;	
+					RSRQ_4G[cnt] = LTE_RSRQ;
+					RSRQ_5G[cnt] = NR_RSRQ;	
+					
+					RATE_DL_4G[cnt] = LTE_DL_TPUT_PHY;
+					RATE_DL_5G[cnt] = NR_DL_TPUT_PHY;
+					RATE_UL_4G[cnt] = LTE_UL_TPUT_PHY;
+					RATE_UL_5G[cnt] = NR_UL_TPUT_PHY;								
+					
+					cnt++;						
+					draw0(); //PCI
+					draw1(); //Band
+					draw2(); //ARFCN				
+					draw3(); //Path
+					draw10(); //RSRP
+					draw11(); //RSRQ
+					draw12(); //DL TPUT
+					draw13(); //UL TPUT
+				}
+
+				
+				//---- DL ----//
+				if(summary.indexOf("ENL2DL") !=-1 && summary.indexOf("5gPHY|") !=-1){ NR_DL_TPUT_PHY = parseInt(summary.split("5gPHY|")[1],10); timestamp_qsh=timestamp; }
+				if(summary.indexOf("ENL2DL") !=-1 && summary.indexOf("4gPHY|") !=-1){ LTE_DL_TPUT_PHY = parseInt(summary.split("4gPHY|")[1],10); timestamp_qsh=timestamp; }				
+				//if(summary.indexOf("NR5GMAC") !=-1 && summary.indexOf("CA_ID") !=-1 && summary.indexOf("DL since last") !=-1){ NR_DL_CC_TPUT(summary, 0); NR_DL_CC_TPUT(summary, 1); NR_DL_CC_TPUT(summary, 2); NR_DL_CC_TPUT(summary, 3); NR_DL_CC_TPUT(summary, 4); NR_DL_CC_TPUT(summary, 5); NR_DL_CC_TPUT(summary, 6); NR_DL_CC_TPUT(summary, 7); } //8cc
+				//if(summary.indexOf("LML1") !=-1 && summary.indexOf("CA_ID") !=-1 && summary.indexOf("DL since last") !=-1){	LTE_DL_CC_TPUT(summary, 0);	LTE_DL_CC_TPUT(summary, 1);	LTE_DL_CC_TPUT(summary, 2);	LTE_DL_CC_TPUT(summary, 3);	LTE_DL_CC_TPUT(summary, 4);	LTE_DL_CC_TPUT(summary, 5);	LTE_DL_CC_TPUT(summary, 6);	LTE_DL_CC_TPUT(summary, 7); } //8cc
+
+				//---- UL ----//
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("PHY") !=-1 && summary.indexOf("NR") !=-1){ NR_UL_TPUT_PHY = parseInt(summary.split("PHY|")[1],10); }					
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("PHY") !=-1 && summary.indexOf("LT") !=-1){ LTE_UL_TPUT_PHY = parseInt(summary.split("PHY|")[1],10); }
+				//if(summary.indexOf("NR5GMAC") !=-1 && summary.indexOf("CA_ID") !=-1 && summary.indexOf("UL since last") !=-1){ NR_UL_CC_TPUT(summary, 0); NR_UL_CC_TPUT(summary, 1); } //2cc						
+				//if(summary.indexOf("LML1") !=-1 && summary.indexOf("CA_ID") !=-1 &&  summary.indexOf("UL since last") !=-1){ LTE_UL_CC_TPUT(summary, 0); LTE_UL_CC_TPUT(summary, 1); } //2cc	
+			}
+
+			if(ItemKey == "[00005/01]" || ItemKey == "[00005/03]")
+			{
+				//var summary = Item.GetItemSummary(); 		
+				var summary = Item.GetItemParsedText();		
+
+				//[0005/0001]              MSG          [    MMPFListener.cpp    127] [MMPFListener::OnNumReceivedPacket - SessionID-0] eMediaType[0], nNumRTPPacket[51], nNumRTCPSRPacket[0], nNumRTCPRRPacket[0]
+				//[0005/0003]              MSG          [    MMPFListener.cpp    248] [MMPFListener::OnNumReceivedPacket - SessionID-0] RTP Timeout - Audio, Th[20], NoData[20]
+				if( summary.indexOf("nNumRTPPacket") !=-1 ){					
+					var volte_rtp = parseInt(summary.split("nNumRTPPacket[")[1],10);					
+					RTP_TIME_STAMP[rtpcnt] = timestamp;
+					RTP[rtpcnt] = volte_rtp;
+					rtpcnt++;			
+					draw14();			
+				}
+				
+				if( summary.indexOf("RTP Timeout") !=-1 ){  
+					RTP_TIME_STAMP[rtpcnt] = timestamp;
+					RTP[rtpcnt] = -10; //VoLTE Drop
+					rtpcnt++;			
+					draw14();
+				}
+			}
+
+
+			if( ItemKey == "[03252]" )
+			{
+				//var summary = Item.GetItemSummary();		
+				var summary = Item.GetItemParsedText();		
+				if(summary.indexOf("QMAP_FLOW_CNTRL_RSP") !=-1 || summary.indexOf("QMAP_FLOW_CNTRL_REQ") !=-1){ EPS_ID =  parseInt(summary.split("EPS Id =")[1],10); }				
+				if(summary.indexOf("CONFIG_UPDATE") !=-1){	
+					var cfg_id =  parseInt(summary.split("EPS Id =")[1],10) ;	
+					if(EPS_ID == cfg_id){
+						var UL_Direction = summary.split("UL Direction =")[1].split("DL Direction")[0];		
+						if(UL_Direction.indexOf("NR5G") !=-1 ){ UL_PATH = 5; } else if(UL_Direction.indexOf("4G") !=-1 ){ UL_PATH = 4; } else{ UL_PATH = -1; }
+						
+						var DL_Direction =  summary.split("DL Direction =")[1].split("RRC Status")[0];
+						if(DL_Direction.indexOf("NR5G") !=-1 ){ DL_PATH = 5; } else if(DL_Direction.indexOf("4G") !=-1 ){ DL_PATH = 4; } else{ DL_PATH = -1; }
+					}
+				}				
+			}
+
+			if(ItemKey == "[0xB88A]")
+			{
+				var messageBody = Item.GetItemParsedText();
+				if(messageBody.indexOf("RACH Result") !=-1){ 					
+					var tmp = messageBody.split("RACH Result")[1].split("=")[1].split("Contention")[0];
+					if(tmp.indexOf("SUCCESS") !=-1){ DL_PATH = 5; UL_PATH = 5; } else if(tmp.indexOf("ABORT") !=-1){ DL_PATH = 4; UL_PATH = 4; }
+				}
+			}
+
+			
+		} 
+	}   
+	PrevIndex = CurrIndex;
+}
+
+function draw0() 
+{
+	var data=[];
+	var Header= ['time', '4G', '5G'];
+	data.push(Header);	
+
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 	
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(PCI_4G[i]);
+		temp.push(PCI_5G[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'SERVING CELL PCI',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'PCI'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH0'));
+	chart.draw(data, options);
+}
+function draw1() 
+{
+	var data=[];
+	var Header= ['time', '4G', '5G'];
+	data.push(Header);	
+
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 	
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(BAND_4G[i]);
+		temp.push(BAND_5G[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'SERVING CELL BAND',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'Band'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH1'));
+	chart.draw(data, options);
+}
+function draw2() 
+{
+	var data=[];
+	var Header= ['time', '4G', '5G'];
+	data.push(Header);	
+
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 	
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(ARFCN_4G[i]);
+		temp.push(ARFCN_5G[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'SERVING CELL ARFCN',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'ARFCN'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH2'));
+	chart.draw(data, options);
+}
+function draw3() 
+{
+	var data=[];
+	var Header= ['time', 'DL', 'UL'];
+	data.push(Header);	
+
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 	
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(PATH_DL[i]);
+		temp.push(PATH_UL[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'DATA PDN PATH',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: '4:LTE, 5:NR'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH3'));
+	chart.draw(data, options);
+}
+
+
+
+function draw10() 
+{
+	var data=[];
+	var Header= ['time', '4G', '5G'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(RSRP_4G[i]);
+		temp.push(RSRP_5G[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'RECEIVED SIGNAL STRENGTH (Pcell)',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RSRP [dBm]'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH10'));
+	chart.draw(data, options);
+}
+function draw11() 
+{
+	var data=[];
+	var Header= ['time', '4G', '5G'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(RSRQ_4G[i]);
+		temp.push(RSRQ_5G[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'RECEIVED SIGNAL QUALITY (Pcell)',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RSRQ [dB]'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH11'));
+	chart.draw(data, options);
+}
+
+
+function draw12() 
+{
+	var data=[];
+	var Header= ['time', '4G', '5G'];
+	data.push(Header);	
+
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 	
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(RATE_DL_4G[i]);
+		temp.push(RATE_DL_5G[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'DOWNLINK DATA SPEED (Aggregated PHY)',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'kbps'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH12'));
+	chart.draw(data, options);
+}
+
+function draw13() 
+{
+	var data=[];
+	var Header= ['time', '4G', '5G'];
+	data.push(Header);	
+
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(RATE_UL_4G[i]);
+		temp.push(RATE_UL_5G[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'UPLINK DATA SPEED (Aggregated PHY)',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'kbps'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH13'));
+	chart.draw(data, options);
+}
+
+function draw14() 
+{
+	var data=[];
+	var Header= ['time', 'RTP'];
+	data.push(Header);	
+
+	var start = 0;
+	if(rtpcnt > windowsize){ start = rtpcnt - windowsize; } //display window size						
+	for (var i = start; i < rtpcnt; i++) 
+	{
+		var temp=[];
+		temp.push(RTP_TIME_STAMP[i]);		
+		temp.push(RTP[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'RECEIVED RTP PACKET',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RTP'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH14')); 
+	chart.draw(data, options);
+}
+
+
+function addRow(){ var Box_row = Box.insertRow(Box.rows.length); var cell = Box_row.insertCell(); cell.innerHTML = "<td>-</td>"; }
+function timestamp_in_sec()
+{
+	var split = timestamp.split(":");
+	var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) +(parseFloat( parseInt(split[2].split(".")[1],10) / 1000)); //unit of seconds
+	return timestamp_sec_unit;		
+}
+
+</script>
+</body>
+</html>
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+

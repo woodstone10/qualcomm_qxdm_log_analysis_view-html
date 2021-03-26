@@ -1,0 +1,209 @@
+<!-- #Soo Kim, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: soo.kim@lge.com, M:+82-10-8466-1775 -->
+<!-- #Version History::LG+WatchDog.html
+v0.1: 2020-10-06, Beta version initial release
+v1.0: 2020-11-20, v1.0 pre-release. 
+v1.0: 2021-01-, v1.0 release
+-->
+<!doctype html public "-//w3c//dtd xhtml 1.0 strict//en" "http://www.w3.org/tr/xhtml1/dtd/xhtml1-strict.dtd">
+<html>
+<head>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5" />
+<meta name="DMViewName" content="LG+WatchDog v1.0" />
+<meta name="DMViewWidth" content="5000" />
+<meta name="DMViewHeight" content="2000" />
+<link rel="stylesheet" href="QXDMStyle.css" />
+<style type="text/css">
+th{ text-align : center; padding-left : 3; padding-right : 3; }   
+td{ text-align : center; padding-left : 3; padding-right : 3; }   
+td.shaded{ text-align : center; padding-left : 3; padding-right : 3; cursor : pointer }
+</style>
+</head>
+<body onunload="Unregister()" onload="Register()">
+
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label">Debug Box</div>
+<table width="100%" id="Box">        	
+<tr><th>Time Stamp | Key | Name | Summary</th></tr>
+<tr><td>-</td></tr>
+</table>	    				
+</td.left></tr>
+</table>
+	
+<p id="LG"></p>
+<script type="text/jscript">
+document.getElementById("LG").innerHTML = "<font color='gray', size=2><center>"+"Copyright by LG Electronics. All Rights Reserved"+"</center></font>";
+
+var IQXDM2;
+var Handle             = 0xFFFFFFFF;
+var UPDATE_MS          = 1000;
+var gMainTickID        = 0;
+var PrevIndex          = -1;
+var SECONDS_PER_DAY = 86400.0;
+var hex = new Array();
+var n;
+var row = 1;
+var ON  = 1;
+var OFF = 0;
+
+var ItemKey = "-";
+var timestamp = "-";
+var NW_adding = 0;
+
+function Register()
+{
+	IQXDM2 = window.external;
+	if (IQXDM2 == null){ window.document.write( "<br />QXDM does not support required interface" ); return; }
+
+	Handle = IQXDM2.RegisterClient( "", 0 );
+	if (Handle == 0xFFFFFFFF){ window.document.write( "<br />Unable to register as client" ); }   
+
+	var clientObject = IQXDM2.ConfigureClientByKeys( Handle );
+	if (clientObject == null){ window.document.write("<br />Failed to get client interface pointer"); return; }
+
+	//clientObject.AddString(0000);
+	clientObject.AddMessage(5,1); 
+	clientObject.AddMessage(5,2); 
+	clientObject.AddMessage(5,3); 
+	clientObject.AddMessage(9501,02,23);	
+	clientObject.AddMessage(9501,02,09);	
+	//--clientObject.AddQshTrace(09,1,2); //-- Can't use this packet due to very heavy log size
+	clientObject.AddQshTrace(13,0,2);
+	clientObject.AddQshTrace(42,0,2); 
+	clientObject.AddQshTrace(47,1,2);
+	clientObject.AddQshTrace(61,1,2);
+	//clientObject.AddQshTrace(76,3); 
+	//clientObject.AddQshTrace(76,4,0); 
+	//clientObject.AddQshTrace(76,4,2); 
+	clientObject.AddQshTrace(87,0,3);
+	//clientObject.AddEvent(0629); 
+	//clientObject.AddEvent(0630); 
+	//clientObject.AddEvent(1606); 
+	//clientObject.AddEvent(1938); 
+	clientObject.AddEvent(1995); 
+	clientObject.AddEvent(3243); // SCG Failure
+	clientObject.AddEvent(2728); // LTE SCELL 
+	//clientObject.AddEvent(2552); //sutible cell info -tmp enable
+	//--clientObject.AddEvent(2690); 
+	//--clientObject.AddEvent(2728); 
+	//clientObject.AddEvent(3184); 
+	//clientObject.AddEvent(3192); 
+	//clientObject.AddEvent(3252);	
+	//clientObject.AddLog(0xB081); 
+	//--clientObject.AddLog(0xB087);
+	//--clientObject.AddLog(0xB0A4);
+	//clientObject.AddLog(0xB0C2); 
+	//clientObject.AddLog(0xB064); 
+	//clientObject.AddLog(0xB14E); 
+	//clientObject.AddLog(0xB16D);
+	//clientObject.AddLog(0xB16E); 
+	//clientObject.AddLog(0xB173);
+	//clientObject.AddLog(0xB821);
+	//clientObject.AddLog(0xB825); 
+	//clientObject.AddLog(0xB84B);
+	//clientObject.AddLog(0xB871);
+	//clientObject.AddLog(0xB872);
+	//clientObject.AddLog(0xB883); 
+	//clientObject.AddLog(0xB887); 
+	//clientObject.AddLog(0xB890);
+	//clientObject.AddLog(0xB8A7);	
+	//clientObject.AddLog(0xB8D2); 
+	//clientObject.AddLog(0xB97F);	
+
+	clientObject.CommitConfig();     
+	gMainTickID = setInterval( 'ProcessLogs()', UPDATE_MS );  
+}
+
+function Unregister()
+{
+	if (gMainTickID != 0){ window.clearInterval( gMainTickID ); gMainTickID = 0; }
+   	if (Handle != 0xFFFFFFFF){ IQXDM2.UnregisterClient( Handle ); }
+}
+
+function ProcessLogs()
+{   
+	var CurrIndex = IQXDM2.GetClientItemCount( Handle ) - 1;
+	if (PrevIndex > CurrIndex){ PrevIndex = -1; }
+	if (CurrIndex < 0 || CurrIndex == PrevIndex){ return; }  	
+   
+	for (var i = PrevIndex + 1; i <= CurrIndex; i++)
+	{
+		var Item = IQXDM2.GetClientItem( Handle, i );
+
+		if (Item != null)
+		{
+			ItemKey = Item.GetItemKeyText();
+			timestamp =  Item.GetItemSpecificTimestampText( false, true );	
+			//var summary = Item.GetItemSummary();
+			var summary = Item.GetItemParsedText(); 
+			if(summary.indexOf("Format") !=-1 ){ summary = summary.split("Format")[1]; }
+		
+
+			/*
+			if(ItemKey == "[0076/04/0]" || ItemKey == "[0076/04/2]")
+			{
+				if(messageBody.search(new RegExp("ENL2DL.*NR.*DL since last.*5gPHY",'g')) >0){ 
+					var NR_TPUT_DL = parseInt(messageBody.split("5gPHY|")[1],10);					
+					Box.rows[row++].cells[0].innerHTML = timestamp +" "+ ItemKey +" "+ NR_TPUT_DL; addRow(); 
+				}
+			}
+			*/
+			
+			if(ItemKey == "[00005/01]" || ItemKey == "[00005/02]" || ItemKey == "[00005/03]"){	
+				if( summary.indexOf("ph cmd err") !=-1 ){ prints(summary); } //cmdbg.c   4189] =CM= <<CM1 ph cmd err, cmd=0, err=60
+				if( summary.indexOf("cm_ph_cmd_oprt_mode") !=-1 ){ prints(summary); } //cm.c   7728] =CM= PH CMD - cm_ph_cmd_oprt_mode(), mode=5, uptime=149, client_id=27, cmd_cb_func=-651421196, data_block_ptr=1374086736
+				if( summary.indexOf("RFM state unknown") !=-1 ){ prints(summary); } //cmph.c   9344] =CM= RFM state unknown defer ONLINE RF = 2 GPS = 1 is_pending_online = 1
+				if( summary.indexOf("RTP Timeout") !=-1 && (parseInt(summary.split("NoData[")[1],10) <= parseInt(summary.split("Th[")[1],10) )){ prints(summary); } //MMPFListener.cpp    248] [MMPFListener::OnNumReceivedPacket - SessionID-0] RTP Timeout - Audio, Th[20], NoData[20]
+			}
+
+			
+			if(ItemKey == "[09501/02/23]" || ItemKey == "[09501/02/09]"){
+				if( summary.indexOf("NW adding the") !=-1 && (NW_adding!=summary) ){ prints(summary); NW_adding = summary; } //lte_rrc_cap_debug.c   1092] RRC CAP: NW adding the 4dl-1ul CA combo: "66A-66A-2A-2AA", PCell: Band 2.
+				if( summary.indexOf("CSG Cell is forbidden") !=-1 ){ prints(summary); } //lte_rrc_csp.c  35063] CSP: CSG Cell is forbidden
+			}		
+
+			if(ItemKey == "[0013/00/2]"){
+				if( summary.indexOf("Failed to add CA combo") !=-1 ){ prints(summary); } //lte_rrc_cap_debug.c   1399] CA_RLF_DBG: Failed to add CA combo, 'Combo' or 'Features' or 'BW' NOT supported by RF, or Not Preferred by the Sub. CHECK RF QCN, Cfg'ed features or bandwidth, or Combo Selection Criteria.
+			}			
+
+			if(ItemKey == "[0087/00/3]"){
+				if(summary.indexOf("No Matching MRDC Combo") !=-1 ){ prints(summary); } //nr5g_rrc_llcdb.c	28869] LLCDB_ENDC_PM (2.1): ERROR ! No Matching MRDC Combo found in CAP struct. Set the PC_NR and PC_ENDC to default 23dbm
+			}		
+
+			if(ItemKey == "[0042/00/2]"){			
+				if( summary.indexOf("CMSOA: Switching") !=-1 ){ prints(summary);} //cmsoa.c   1220] CMSOA: Switching CSFB -> SRLTE
+				if( summary.indexOf("SSAC CHANGE INFO IND Voice:is valid=1") !=-1   ){ prints(summary); } //qmi_nas.c  42460] SSAC CHANGE INFO IND Voice:is valid=1 barring_factor_voice 0, barring_time 4, sib2_barring_factor_voice 0, sib2_barring_time 4
+				if( summary.indexOf("SSAC CHANGE INFO IND Video:is valid=1") !=-1   ){ prints(summary); } //qmi_nas.c  42463] SSAC CHANGE INFO IND Video:is valid=0  barring_factor_video 255, barring_time 65535, sib2_barring_factor_video 255, sib2_barring_time 65535
+			}
+			
+			if(ItemKey == "[0047/01/2]"){
+				if( summary.indexOf("T3402 has been started") !=-1 ){ prints(summary); } //emm_update_lib.c   8206] DS: SUB 0 =EMM= T3402 has been started1 
+				if( summary.indexOf("Start BACKOFF PLMN Search Timer  TIMER COUNT") !=-1 ){ prints(summary); } //reg_timers.c   2265] DS: SUB 0 =REG= Start BACKOFF PLMN Search Timer  TIMER COUNT 7200001 
+			}				
+
+			if(ItemKey == "[0061/01/2]"){
+				if( summary.indexOf("cfcm_monitor_proc_") !=-1 && summary.indexOf("state") !=-1 ){ if(parseInt(summary.split("state")[1],10) >0){ prints("<font color='red'>"+ summary +"</font>"); } }			
+			}
+
+			if(ItemKey == "[01995]"){ prints(summary); } //EVENT_LTE_RRC_RADIO_LINK_FAILURE_STAT 
+			if(ItemKey == "[03243]"){ prints(summary); } //EVENT_NR5G_RRC_SCG_FAILUREFailure Type = rlc-MaxNumRetx (2)
+			if(ItemKey == "[02728]"){ if( summary.indexOf("vRLF due to FC") !=-1 ){ prints("<font color='red'>"+ summary +"</font>"); } }//EVENT_LTE_SCELL_STATE_CHANGE_ENHANCED3SysFN = 598, subFN = 2, Scell Index = 1, Cell ID = 0, EARFCN = 66786, To State = Deactive, From State = Active, Cause = Virtual SCell RLF, vRLF Cause = vRLF due to FC
+					
+			
+		} 
+	}   
+	PrevIndex = CurrIndex;
+}
+
+function prints(string){ Box.rows[row++].cells[0].innerHTML = timestamp +" "+ ItemKey +" "+ string; addRow(); }
+function addRow(){ var Box_row = Box.insertRow(Box.rows.length); var cell = Box_row.insertCell(); cell.innerHTML = "<td>-</td>"; }
+
+
+
+
+</script>
+</body>
+</html>
+<!-- #Soo Kim, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: soo.kim@lge.com, M:+82-10-8466-1775 -->
+
+

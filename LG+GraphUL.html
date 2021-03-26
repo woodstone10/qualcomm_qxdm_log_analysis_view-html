@@ -1,0 +1,905 @@
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+<!-- #Version History::LG+GraphUL.html
+v0.1: 2020-06-30
+v0.2: 2020-07-02, fix issue of time reverse case
+v0.3: 2020-07-14, fix B868, fix B883 for general more
+v0.9: 2020-10-06, Using QSH print instead of log packet
+v1.0: 2020-11-20, v1.0 pre-release. NOTE:Use Plain format (not QCAT format, QXDM > Options > Parsing option > QCAT format uncheck), add RSRP and RSRQ graph per CC
+v1.0: 2021-01-15, v1.0 official release. Working on QXDM5
+-->
+<!doctype html public "-//w3c//dtd xhtml 1.0 strict//en" "http://www.w3.org/tr/xhtml1/dtd/xhtml1-strict.dtd">
+<html>
+<head>
+<meta name="vs_targetSchema" content="http://schemas.microsoft.com/intellisense/ie5" />
+<meta name="DMViewName" content="LG+GraphUL v1.0" />
+<meta name="DMViewWidth" content="5000" />
+<meta name="DMViewHeight" content="2000" />
+<link rel="stylesheet" href="QXDMStyle.css" />
+<style type="text/css">
+th{ text-align : center; padding-left : 3; padding-right : 3; }   
+td{ text-align : center; padding-left : 3; padding-right : 3; }   
+td.shaded{ text-align : center; padding-left : 3; padding-right : 3; cursor : pointer }
+</style>
+</head>
+<body onunload="Unregister()" onload="Register()">
+
+<label>Sampling:</label><input type="text" size="1" id="samplingInput" value="0.1" /><label>sec</label>
+<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+<label>Window:</label><input type="text" size="1" id="windowInput" value="30" /><label>sec</label>
+
+<div id="GRAPH0"><style>#GRAPH0 { height: 250px; width: 100%; }</style></div>
+<div id="GRAPH1"><style>#GRAPH1 { height: 250px; width: 100%; }</style></div>
+<div id="GRAPH1_1"><style>#GRAPH1_1 { height: 300px; width: 100%; }</style></div>
+<div id="GRAPH1_2"><style>#GRAPH1_2 { height: 300px; width: 100%; }</style></div>
+<div id="GRAPH2"><style>#GRAPH1 { height: 250px; width: 100%; }</style></div>
+<div id="GRAPH2_1"><style>#GRAPH2_1 { height: 300px; width: 100%; }</style></div>
+<div id="GRAPH2_2"><style>#GRAPH2_2 { height: 300px; width: 100%; }</style></div>
+
+<div id="GRAPH10"><style>#GRAPH10 { height: 300px; width: 100%; }</style></div> 
+<div id="GRAPH11"><style>#GRAPH11 { height: 300px; width: 100%; }</style></div> 
+<div id="GRAPH12"><style>#GRAPH12 { height: 300px; width: 100%; }</style></div>
+<div id="GRAPH13"><style>#GRAPH13 { height: 300px; width: 100%; }</style></div>
+
+<div id="GRAPH20"><style>#GRAPH20 { height: 300px; width: 100%; }</style></div> 
+<div id="GRAPH21"><style>#GRAPH21 { height: 300px; width: 100%; }</style></div> 
+<div id="GRAPH22"><style>#GRAPH22 { height: 300px; width: 100%; }</style></div>
+<div id="GRAPH23"><style>#GRAPH23 { height: 300px; width: 100%; }</style></div>
+
+<p id="timestamp"></p>
+
+<table border="0" width="100%" cellpadding="0">
+<tr><td.left valign="top" class="noborder" style="width: 100%">
+<div class="label">Debug Box</div>
+<table width="100%" id="Box">        	
+<tr><th>Time Stamp | Key | Name | Summary</th></tr>
+<tr><td>-</td></tr>
+</table>	    				
+</td.left></tr>
+</table>
+	
+<p id="LG"></p>
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+<script type="text/jscript">
+google.charts.load('current', {'packages':['corechart']});
+document.getElementById("LG").innerHTML = "<font color='gray', size=2><center>"+"Copyright by LG Electronics. All Rights Reserved"+"</center></font>";
+
+var IQXDM2;
+var Handle             = 0xFFFFFFFF;
+var UPDATE_MS          = 1000;
+var gMainTickID        = 0;
+var PrevIndex          = -1;
+var SECONDS_PER_DAY = 86400.0;
+var hex = new Array();
+var n;
+var row = 1;
+var ON  = 1;
+var OFF = 0;
+
+var windowsize = 0;
+
+var ItemKey = "-";
+var timestamp = "-";
+var timestamp_qsh = 0;
+var timestamp_sec = 0;
+var timestamp_sec_p = 0;
+
+var cnt = 0;
+var TIME_STAMP = new Array();
+
+var LTE_RSRP = new Array(); var LTE_RSRQ = new Array(); 
+var LTE_RSRP0 = new Array(); var LTE_RSRP1 = new Array(); var LTE_RSRP2 = new Array(); var LTE_RSRP3 = new Array(); var LTE_RSRP4 = new Array(); var LTE_RSRP5 = new Array(); var LTE_RSRP6 = new Array();
+var LTE_RSRQ0 = new Array(); var LTE_RSRQ1 = new Array(); var LTE_RSRQ2 = new Array(); var LTE_RSRQ3 = new Array(); var LTE_RSRQ4 = new Array(); var LTE_RSRQ5 = new Array(); var LTE_RSRQ6 = new Array();
+var NR_RSRP = new Array(); var NR_RSRQ = new Array(); 
+var NR_RSRP0 = new Array(); var NR_RSRP1 = new Array(); var NR_RSRP2 = new Array(); var NR_RSRP3 = new Array(); var NR_RSRP4 = new Array(); var NR_RSRP5 = new Array(); var NR_RSRP6 = new Array(); var NR_RSRP7 = new Array();
+var NR_RSRQ0 = new Array(); var NR_RSRQ1 = new Array(); var NR_RSRQ2 = new Array(); var NR_RSRQ3 = new Array(); var NR_RSRQ4 = new Array(); var NR_RSRQ5 = new Array(); var NR_RSRQ6 = new Array(); var NR_RSRQ7 = new Array();
+
+var NR_UL_TPUT_PHY; var LTE_UL_TPUT_PHY; var NR_UL_TPUT_IPA; var LTE_UL_TPUT_IPA;	
+var RATE_UL_4G = new Array(); var RATE_UL_5G = new Array(); var RATE_UL_IPA = new Array();
+
+var NR_UL_AVG_PHY = new Array(); var NR_UL_AVG_PHY0 = new Array(); var NR_UL_AVG_PHY1 = new Array();
+var NR_UL_BLER = new Array(); var NR_UL_BLER0 = new Array(); var NR_UL_BLER1 = new Array(); 
+var NR_UL_MCS = new Array(); var NR_UL_MCS0 = new Array(); var NR_UL_MCS1 = new Array();
+var NR_UL_RB = new Array(); var NR_UL_RB0 = new Array(); var NR_UL_RB1 = new Array();
+var NR_UL_PHR = new Array(); var NR_UL_PHR0 = new Array(); var NR_UL_PHR1 = new Array();
+
+var LTE_UL_AVG_PHY = new Array(); var LTE_UL_AVG_PHY0 = new Array(); var LTE_UL_AVG_PHY1 = new Array();
+var LTE_UL_BLER = new Array(); var LTE_UL_BLER0 = new Array(); var LTE_UL_BLER1 = new Array(); 
+var LTE_UL_MCS = new Array(); var LTE_UL_MCS0 = new Array(); var LTE_UL_MCS1 = new Array();
+var LTE_UL_RB = new Array(); var LTE_UL_RB0 = new Array(); var LTE_UL_RB1 = new Array();
+var LTE_UL_PHR = new Array(); var LTE_UL_PHR0 = new Array(); var LTE_UL_PHR1 = new Array();
+
+function clear(){
+	LTE_UL_TPUT_PHY = 0;
+	NR_UL_TPUT_PHY = 0;;
+	LTE_UL_TPUT_IPA = 0;
+	NR_UL_TPUT_IPA = 0;
+	for (var cc=0; cc<8; cc++){
+		LTE_RSRP[cc]=-150;
+		LTE_RSRQ[cc]=-30;
+		NR_RSRP[cc]=-150;
+		NR_RSRQ[cc]=-30;
+		NR_UL_AVG_PHY[cc]=0;
+		NR_UL_MCS[cc]=0;
+		NR_UL_RB[cc]=0;
+		//NR_UL_slot[cc]=0;
+		NR_UL_BLER[cc]=0;
+		LTE_UL_AVG_PHY[cc]=0;
+		LTE_UL_MCS[cc]=0;
+		LTE_UL_RB[cc]=0;
+		//LTE_UL_slot[cc]=0;
+		LTE_UL_BLER[cc]=0;
+	}
+}
+clear();
+
+var B193_trig = 0;
+var B97F_trig = 0;	
+				
+function Register()
+{
+	IQXDM2 = window.external;
+	if (IQXDM2 == null){ window.document.write( "<br />QXDM does not support required interface" ); return; }
+
+	Handle = IQXDM2.RegisterClient( "", 0 );
+	if (Handle == 0xFFFFFFFF){ window.document.write( "<br />Unable to register as client" ); }   
+
+	var clientObject = IQXDM2.ConfigureClientByKeys( Handle );
+	if (clientObject == null){ window.document.write("<br />Failed to get client interface pointer"); return; }
+
+	clientObject.AddQshTrace(76,4,0); 
+	clientObject.AddQshTrace(76,4,2); 	
+	//clientObject.AddLog(0xB097);	
+	//clientObject.AddLog(0xB16D);
+	clientObject.AddLog(0xB193); 
+	//clientObject.AddLog(0xB868);
+	//clientObject.AddLog(0xB883);
+	//clientObject.AddLog(0xB8D2);	
+	clientObject.AddLog(0xB97F);
+	
+	clientObject.CommitConfig();     
+	gMainTickID = setInterval( 'ProcessLogs()', UPDATE_MS );  
+}
+
+function Unregister()
+{
+	if (gMainTickID != 0){ window.clearInterval( gMainTickID ); gMainTickID = 0; }
+   	if (Handle != 0xFFFFFFFF){ IQXDM2.UnregisterClient( Handle ); }
+}
+
+function ProcessLogs()
+{   
+	var CurrIndex = IQXDM2.GetClientItemCount( Handle ) - 1;
+	if (PrevIndex > CurrIndex){ PrevIndex = -1; }
+	if (CurrIndex < 0 || CurrIndex == PrevIndex){ return; }  
+
+	windowsize = windowInput.value;
+	
+   
+	for (var i = PrevIndex + 1; i <= CurrIndex; i++)
+	{
+		var Item = IQXDM2.GetClientItem( Handle, i );
+
+		if (Item != null)
+		{
+			ItemKey = Item.GetItemKeyText();
+			timestamp =  Item.GetItemSpecificTimestampText( false, true );
+			timestamp_sec = timestamp_in_sec();
+			document.getElementById("timestamp").innerHTML = "<font color='black', size=2><center>"+"Current Timestamp: "+timestamp+"</center></font>";
+			//Box.rows[row++].cells[0].innerHTML = timestamp +" "+ItemKey +" "+timestamp_sec ; addRow(); //debug message						
+			
+			if(timestamp_sec - timestamp_sec_p >= samplingInput.value || timestamp_sec - timestamp_sec_p < -10) //read log packets at every sampling interval
+			{
+				timestamp_sec_p = timestamp_sec; 
+				B193_trig = 1;
+				B97F_trig = 1;	
+			}
+
+			if(ItemKey == "[0xB193]")
+			{
+				//if(B193_trig == 1){	B193_trig = 0;		
+					var messageBody = Item.GetItemParsedText();		
+					var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+PCell",'g'));
+					if(idx>0){ LTE_RSRP[0] = parseInt( messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0],10); LTE_RSRQ[0] = parseInt( messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0],10); }
+					var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC1",'g'));
+					if(idx>0){ LTE_RSRP[1] = parseInt( messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0],10); LTE_RSRQ[1] = parseInt( messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0],10); }
+					var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC2",'g'));
+					if(idx>0){ LTE_RSRP[2] = parseInt( messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0],10); LTE_RSRQ[2] = parseInt( messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0],10); }
+					var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC3",'g'));
+					if(idx>0){ LTE_RSRP[3] = parseInt( messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0],10); LTE_RSRQ[3] = parseInt( messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0],10); }
+					var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC4",'g'));
+					if(idx>0){ LTE_RSRP[4] = parseInt( messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0],10); LTE_RSRQ[4] = parseInt( messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0],10); }
+					var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC5",'g'));
+					if(idx>0){ LTE_RSRP[5] = parseInt( messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0],10); LTE_RSRQ[5] = parseInt( messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0],10); }
+					var idx = messageBody.search(new RegExp("Serving Cell Index\\s+=\\s+SCC6",'g'));
+					if(idx>0){ LTE_RSRP[6] = parseInt( messageBody.split("Filtered RSRP")[1].split("=")[1].split("dBm")[0],10); LTE_RSRQ[6] = parseInt( messageBody.split("Filtered RSRQ")[1].split("=")[1].split("dB")[0],10); }
+				//}				
+			}
+
+
+			if(ItemKey == "[0xB97F]") //NR RSRP,RSRQ
+			{
+				if(B97F_trig == 1){ B97F_trig = 0;	
+				var messageBody = Item.GetItemParsedText();
+				//Plain format
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[0\\]",'g'));							
+				if(idx>0){ NR_RSRP[0] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0],10); NR_RSRQ[0] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0],10); } 							
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[1\\]",'g'));							
+				if(idx>0){ NR_RSRP[1] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0],10); NR_RSRQ[1] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0],10); } 
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[2\\]",'g'));							
+				if(idx>0){ NR_RSRP[2] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0],10); NR_RSRQ[2] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0],10); } 
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[3\\]",'g'));							
+				if(idx>0){ NR_RSRP[3] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0],10); NR_RSRQ[3] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0],10); } 
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[4\\]",'g'));							
+				if(idx>0){ NR_RSRP[4] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0],10); NR_RSRQ[4] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0],10); }
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[5\\]",'g'));							
+				if(idx>0){ NR_RSRP[5] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0],10); NR_RSRQ[5] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0],10); } 
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[6\\]",'g'));							
+				if(idx>0){ NR_RSRP[6] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0],10); NR_RSRQ[6] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0],10); } 
+				var idx = messageBody.search(new RegExp("Component Carrier List\\[7\\]",'g'));
+				if(idx>0){ NR_RSRP[7] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRP =")[1].split("}")[0],10); NR_RSRQ[7] = parseInt( messageBody.substring(idx+1000,idx).split("Cell Quality RSRQ =")[1].split("}")[0],10); } 
+				}
+			}
+
+			if(ItemKey == "[0076/04/0]" || ItemKey == "[0076/04/2]")
+			{
+				//var summary = Item.GetItemSummary(); 
+				var summary = Item.GetItemParsedText();		
+				if( summary.indexOf("===== ANALYSIS #") !=-1 && timestamp_qsh != 0)
+				{	
+					TIME_STAMP[cnt] = timestamp_qsh;
+
+					LTE_RSRP0[cnt] = LTE_RSRP[0];
+					LTE_RSRP1[cnt] = LTE_RSRP[1];
+					LTE_RSRP2[cnt] = LTE_RSRP[2];
+					LTE_RSRP3[cnt] = LTE_RSRP[3];
+					LTE_RSRP4[cnt] = LTE_RSRP[4];
+					LTE_RSRP5[cnt] = LTE_RSRP[5];
+					LTE_RSRP6[cnt] = LTE_RSRP[6];
+
+					LTE_RSRQ0[cnt] = LTE_RSRQ[0];
+					LTE_RSRQ1[cnt] = LTE_RSRQ[1];
+					LTE_RSRQ2[cnt] = LTE_RSRQ[2];
+					LTE_RSRQ3[cnt] = LTE_RSRQ[3];
+					LTE_RSRQ4[cnt] = LTE_RSRQ[4];
+					LTE_RSRQ5[cnt] = LTE_RSRQ[5];
+					LTE_RSRQ6[cnt] = LTE_RSRQ[6];
+
+					NR_RSRP0[cnt] = NR_RSRP[0];
+					NR_RSRP1[cnt] = NR_RSRP[1];
+					NR_RSRP2[cnt] = NR_RSRP[2];
+					NR_RSRP3[cnt] = NR_RSRP[3];
+					NR_RSRP4[cnt] = NR_RSRP[4];
+					NR_RSRP5[cnt] = NR_RSRP[5];
+					NR_RSRP6[cnt] = NR_RSRP[6];
+					NR_RSRP7[cnt] = NR_RSRP[7];
+
+					NR_RSRQ0[cnt] = NR_RSRQ[0];
+					NR_RSRQ1[cnt] = NR_RSRQ[1];
+					NR_RSRQ2[cnt] = NR_RSRQ[2];
+					NR_RSRQ3[cnt] = NR_RSRQ[3];
+					NR_RSRQ4[cnt] = NR_RSRQ[4];
+					NR_RSRQ5[cnt] = NR_RSRQ[5];
+					NR_RSRQ6[cnt] = NR_RSRQ[6];
+					NR_RSRQ7[cnt] = NR_RSRQ[7];		
+					
+					RATE_UL_4G[cnt] = LTE_UL_TPUT_PHY;  RATE_UL_5G[cnt] = NR_UL_TPUT_PHY;	
+					if(LTE_UL_TPUT_IPA > NR_UL_TPUT_IPA){ RATE_UL_IPA[cnt]=LTE_UL_TPUT_IPA; } else{ RATE_UL_IPA[cnt]=NR_UL_TPUT_IPA; }
+	
+					NR_UL_AVG_PHY0[cnt] = NR_UL_AVG_PHY[0];
+					NR_UL_AVG_PHY1[cnt] = NR_UL_AVG_PHY[1];								
+
+					NR_UL_MCS0[cnt] = NR_UL_MCS[0];
+					NR_UL_MCS1[cnt] = NR_UL_MCS[1];						
+
+					if(NR_UL_MCS[0]!=0){ NR_UL_RB0[cnt] = NR_UL_RB[0]; } else{ NR_UL_RB0[cnt]=0; }
+					if(NR_UL_MCS[1]!=0){ NR_UL_RB1[cnt] = NR_UL_RB[1]; } else{ NR_UL_RB1[cnt]=0; }
+
+					NR_UL_BLER0[cnt] = NR_UL_BLER[0];
+					NR_UL_BLER1[cnt] = NR_UL_BLER[1];					
+
+					LTE_UL_AVG_PHY0[cnt] = LTE_UL_AVG_PHY[0];					
+					LTE_UL_AVG_PHY1[cnt] = LTE_UL_AVG_PHY[1];						
+
+					LTE_UL_MCS0[cnt] = LTE_UL_MCS[0];
+					LTE_UL_MCS1[cnt] = LTE_UL_MCS[1];							
+
+					LTE_UL_RB0[cnt] = LTE_UL_RB[0];
+					LTE_UL_RB1[cnt] = LTE_UL_RB[1];					
+
+					LTE_UL_BLER0[cnt] = LTE_UL_BLER[0];
+					LTE_UL_BLER1[cnt] = LTE_UL_BLER[1];
+					
+					cnt++;						
+					draw0(); //LTE/NR TPUT		
+					draw1(); draw1_1(); draw1_2(); //LTE/NR RSRP	
+					draw2(); draw2_1(); draw2_2(); //LTE/NR RSRQ	
+
+					draw10(); //NR TPUT per CC
+					draw11(); //NR MCS
+					draw12(); //NR RB
+					draw13(); //NR MCS
+					
+					draw20(); //LTE TPUT per CC
+					draw21(); //LTE MCS
+					draw22(); //LTE RB
+					draw23(); //LTE MCS
+
+					clear();
+				}
+				
+				//---- UL ----//
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("PHY") !=-1 && summary.indexOf("NR") !=-1){ NR_UL_TPUT_PHY = parseInt(summary.split("PHY|")[1],10); timestamp_qsh=timestamp; }					
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("PHY") !=-1 && summary.indexOf("LT") !=-1){ LTE_UL_TPUT_PHY = parseInt(summary.split("PHY|")[1],10); timestamp_qsh=timestamp; }
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("IPA") !=-1 && summary.indexOf("LT") !=-1){ if(summary.indexOf("IPA|") !=-1){ LTE_UL_TPUT_IPA = parseInt(summary.split("IPA|")[1],10); } else if(summary.indexOf("IPA->PDCP:") !=-1){ LTE_UL_TPUT_IPA =  parseInt(summary.split("IPA->PDCP:")[1],10); } }	
+				if(summary.indexOf("ENL2UL") !=-1 && summary.indexOf("IPA") !=-1 && summary.indexOf("NR") !=-1){ if(summary.indexOf("IPA|") !=-1){ NR_UL_TPUT_IPA = parseInt(summary.split("IPA|")[1],10); } else if(summary.indexOf("IPA->PDCP:") !=-1){ NR_UL_TPUT_IPA =  parseInt(summary.split("IPA->PDCP:")[1],10); } }
+				if(summary.indexOf("NR5GMAC") !=-1 && summary.indexOf("CA_ID") !=-1 && summary.indexOf("UL since last") !=-1){ NR_UL_CC_TPUT(summary, 0); NR_UL_CC_TPUT(summary, 1); } //2cc						
+				if(summary.indexOf("LML1") !=-1 && summary.indexOf("CA_ID") !=-1 &&  summary.indexOf("UL since last") !=-1){ LTE_UL_CC_TPUT(summary, 0); LTE_UL_CC_TPUT(summary, 1); } //2cc	
+			}	
+
+						
+		} 
+	}   
+	PrevIndex = CurrIndex;
+}
+
+
+function NR_UL_CC_TPUT (summary, cc)
+{		
+	if(summary.search(new RegExp( "CA_ID:\\s+"+cc, 'g')) > 0 && summary.indexOf("AvgPHY:") !=-1){
+		NR_UL_AVG_PHY[cc] = parseInt(summary.split("|")[3].split(":")[1],10);	
+		NR_UL_BLER[cc] = parseInt(summary.split("|")[4].split(":")[1],10);
+		NR_UL_MCS[cc] = parseInt(summary.split("|")[8].split(":")[1],10);
+		NR_UL_RB[cc] = parseInt(summary.split("|")[9].split(":")[1],10);	
+		NR_UL_PHR[cc] = parseInt(summary.split("|")[10].split(":")[1],10);	//index
+		/*
+		if(phr_cc == 0){ NR_UL_PHR[cc] = 0; }  //dB 
+		else if(phr_cc <= 55){ NR_UL_PHR[cc] = phr_cc-23; }  //dB 
+		else if(phr_cc == 56){ NR_UL_PHR[cc] = 25; }  //dB 
+		else if(phr_cc == 57){ NR_UL_PHR[cc] = 27; }  //dB 
+		else if(phr_cc == 58){ NR_UL_PHR[cc] = 29; }  //dB 
+		else if(phr_cc == 59){ NR_UL_PHR[cc] = 31; }  //dB 
+		else if(phr_cc == 60){ NR_UL_PHR[cc] = 33; }  //dB 
+		else if(phr_cc == 61){ NR_UL_PHR[cc] = 35; }  //dB 
+		else if(phr_cc == 62){ NR_UL_PHR[cc] = 37; }  //dB 
+		else if(phr_cc == 63){ NR_UL_PHR[cc] = 38; }  //dB 
+		else { NR_UL_PHR[cc] = 0;  }  //dB 
+		*/
+	}
+}
+
+function LTE_UL_CC_TPUT (summary, cc)
+{		
+	if(summary.search(new RegExp( "CA_ID:\\s+"+cc, 'g')) > 0 && summary.indexOf("AvgPHY:") !=-1){
+		LTE_UL_AVG_PHY[cc] = parseInt(summary.split("|")[3].split(":")[1],10);	
+		LTE_UL_BLER[cc] = parseInt(summary.split("|")[4].split(":")[1],10);
+		LTE_UL_MCS[cc] = parseInt(summary.split("|")[8].split(":")[1],10);
+		LTE_UL_RB[cc] = parseInt(summary.split("|")[9].split(":")[1],10);	
+		LTE_UL_PHR[cc] = parseInt(summary.split("|")[10].split(":")[1],10); //index
+		/* 
+		if(phr_cc == 0){ LTE_UL_PHR[cc] = 0; }  //dB 
+		else if(phr_cc <= 55){ LTE_UL_PHR[cc] = phr_cc-23; }  //dB 
+		else if(phr_cc == 56){ LTE_UL_PHR[cc] = 25; }  //dB 
+		else if(phr_cc == 57){ LTE_UL_PHR[cc] = 27; }  //dB 
+		else if(phr_cc == 58){ LTE_UL_PHR[cc] = 29; }  //dB 
+		else if(phr_cc == 59){ LTE_UL_PHR[cc] = 31; }  //dB 
+		else if(phr_cc == 60){ LTE_UL_PHR[cc] = 33; }  //dB 
+		else if(phr_cc == 61){ LTE_UL_PHR[cc] = 35; }  //dB 
+		else if(phr_cc == 62){ LTE_UL_PHR[cc] = 37; }  //dB 
+		else if(phr_cc == 63){ LTE_UL_PHR[cc] = 38; }  //dB 
+		else { LTE_UL_PHR[cc] = 0;  }  //dB 
+		*/
+	}
+}
+
+
+function draw0() 
+{
+	var data=[];
+	var Header= ['time', '4G PHY', '5G PHY', 'IPA'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(RATE_UL_4G[i]);
+		temp.push(RATE_UL_5G[i]);
+		temp.push(RATE_UL_IPA[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'UPLINK DATA SPEED (Aggregated)',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'kbps'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH0'));
+	//var chart = new google.visualization.SteppedAreaChart(document.getElementById('GRAPH')); //line
+	//var chart = new google.visualization.ScatterChart(document.getElementById('GRAPH')); //scatter
+	chart.draw(data, options);
+}
+
+function draw1() 
+{
+	var data=[];
+	var Header= ['time', '4G RSRP', '5G RSRP'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(LTE_RSRP0[i]);
+		temp.push(NR_RSRP0[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'PCELL RECEIVED SIGNAL STRENGTH',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RSRP [dBm]'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH1'));
+	chart.draw(data, options);
+}
+
+function draw1_1() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1', 'CC2', 'CC3', 'CC4', 'CC5', 'CC6'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(LTE_RSRP0[i]);
+		temp.push(LTE_RSRP1[i]);
+		temp.push(LTE_RSRP2[i]);
+		temp.push(LTE_RSRP3[i]);
+		temp.push(LTE_RSRP4[i]);
+		temp.push(LTE_RSRP5[i]);
+		temp.push(LTE_RSRP6[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'LTE RECEIVED SIGNAL STRENGTH',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RSRP [dBm]'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH1_1'));
+	chart.draw(data, options);
+}
+
+function draw1_2() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1', 'CC2', 'CC3', 'CC4', 'CC5', 'CC6', 'CC7'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(NR_RSRP0[i]);
+		temp.push(NR_RSRP1[i]);
+		temp.push(NR_RSRP2[i]);
+		temp.push(NR_RSRP3[i]);
+		temp.push(NR_RSRP4[i]);
+		temp.push(NR_RSRP5[i]);
+		temp.push(NR_RSRP6[i]);
+		temp.push(NR_RSRP7[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'NR RECEIVED SIGNAL STRENGTH',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RSRP [dBm]'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH1_2'));
+	chart.draw(data, options);
+}
+
+function draw2() 
+{
+	var data=[];
+	var Header= ['time', '4G RSRQ', '5G RSRQ'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(LTE_RSRQ0[i]);
+		temp.push(NR_RSRQ0[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'PCELL RECEIVED SIGNAL QUALITY',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RSRQ [dB]'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH2'));
+	chart.draw(data, options);
+}
+
+function draw2_1() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1', 'CC2', 'CC3', 'CC4', 'CC5', 'CC6'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(LTE_RSRQ0[i]);
+		temp.push(LTE_RSRQ1[i]);
+		temp.push(LTE_RSRQ2[i]);
+		temp.push(LTE_RSRQ3[i]);
+		temp.push(LTE_RSRQ4[i]);
+		temp.push(LTE_RSRQ5[i]);
+		temp.push(LTE_RSRQ6[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'LTE RECEIVED SIGNAL QUALITY',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RSRQ [dB]'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH2_1'));
+	chart.draw(data, options);
+}
+
+function draw2_2() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1', 'CC2', 'CC3', 'CC4', 'CC5', 'CC6', 'CC7'];
+	data.push(Header);	
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size						
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);		
+		temp.push(NR_RSRQ0[i]);
+		temp.push(NR_RSRQ1[i]);
+		temp.push(NR_RSRQ2[i]);
+		temp.push(NR_RSRQ3[i]);
+		temp.push(NR_RSRQ4[i]);
+		temp.push(NR_RSRQ5[i]);
+		temp.push(NR_RSRQ6[i]);
+		temp.push(NR_RSRQ7[i]);
+		data.push(temp);
+	}
+	
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'NR RECEIVED SIGNAL QUALITY',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		//hAxis: {title: 'timestamp'},
+        vAxis: {title: 'RSRQ [dB]'},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH2_2'));
+	chart.draw(data, options);
+}
+
+
+function draw10() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1'];
+	data.push(Header);
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size	
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);
+		temp.push(NR_UL_AVG_PHY0[i]);
+		temp.push(NR_UL_AVG_PHY1[i]);		
+		data.push(temp);
+	}
+		
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'NR UL TPUT (PHY)',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'time'},
+        vAxis: {title: 'kbps', minValue:0},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH10')); 
+	chart.draw(data, options);
+}
+
+function draw11() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1'];
+	data.push(Header);
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size	
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);
+		temp.push(NR_UL_MCS0[i]);
+		temp.push(NR_UL_MCS1[i]);		
+		data.push(temp);
+	}
+		
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'NR UL MCS',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'time'},
+        vAxis: {title: 'MCS', minValue:0},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH11')); 
+	chart.draw(data, options);
+}
+
+function draw12() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1'];
+	data.push(Header);
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size	
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);
+		temp.push(NR_UL_RB0[i]);
+		temp.push(NR_UL_RB1[i]);		
+		data.push(temp);
+	}
+		
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'NR UL RB',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'time'},
+        vAxis: {title: 'RB', minValue:0},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH12')); 
+	chart.draw(data, options);
+}
+
+
+
+function draw13() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1'];
+	data.push(Header);
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size	
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);
+		temp.push(NR_UL_BLER0[i]);
+		temp.push(NR_UL_BLER1[i]);		
+		data.push(temp);
+	}
+		
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'NR UL BLER',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'time'},
+        vAxis: {title: 'BLER%', minValue:0},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH13')); 
+	chart.draw(data, options);
+}
+
+
+function draw20() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1'];
+	data.push(Header);
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size	
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);
+		temp.push(LTE_UL_AVG_PHY0[i]);
+		temp.push(LTE_UL_AVG_PHY1[i]);		
+		data.push(temp);
+	}
+		
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'LTE UL TPUT (PHY)',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'time'},
+        vAxis: {title: 'kbps', minValue:0},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH20')); 
+	chart.draw(data, options);
+}
+
+function draw21() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1'];
+	data.push(Header);
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size	
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);
+		temp.push(LTE_UL_MCS0[i]);
+		temp.push(LTE_UL_MCS1[i]);		
+		data.push(temp);
+	}
+		
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'LTE UL MCS',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'time'},
+        vAxis: {title: 'MCS', minValue:0},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH21')); 
+	chart.draw(data, options);
+}
+
+function draw22() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1'];
+	data.push(Header);
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size	
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);
+		temp.push(LTE_UL_RB0[i]);
+		temp.push(LTE_UL_RB1[i]);		
+		data.push(temp);
+	}
+		
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'LTE UL RB',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'time'},
+        vAxis: {title: 'RB', minValue:0},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH22')); 
+	chart.draw(data, options);
+}
+
+
+function draw23() 
+{
+	var data=[];
+	var Header= ['time', 'CC0', 'CC1'];
+	data.push(Header);
+	
+	var start = 0;
+	if(cnt > windowsize){ start = cnt - windowsize; } //display window size	
+	for (var i = start; i < cnt; i++) 
+	{
+		var temp=[];
+		temp.push(TIME_STAMP[i]);
+		temp.push(LTE_UL_BLER0[i]);
+		temp.push(LTE_UL_BLER1[i]);		
+		data.push(temp);
+	}
+		
+	var data = google.visualization.arrayToDataTable(data);
+	var options = {
+		title: 'LTE UL BLER',
+		titleTextStyle: { color: 'gray', fontSize: '20', align: 'center'},
+		curveType: 'function',
+		hAxis: {title: 'time'},
+        vAxis: {title: 'BLER%', minValue:0},
+        chartArea: {width:'80%'},
+        pointSize: 5,
+		};
+	var chart = new google.visualization.LineChart(document.getElementById('GRAPH23')); 
+	chart.draw(data, options);
+}
+
+
+function addRow(){ var Box_row = Box.insertRow(Box.rows.length); var cell = Box_row.insertCell(); cell.innerHTML = "<td>-</td>"; }
+
+function timestamp_in_sec()
+{
+	var split = timestamp.split(":");
+	//var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) + (parseFloat( parseInt(split[2].split(".")[1],10) / 1000).toFixed(3)); //unit of seconds
+	var timestamp_sec_unit = (parseInt(split[0],10)*3600) + (parseInt(split[1],10)*60) + (parseInt(split[2].split(".")[0],10)) +(parseFloat( parseInt(split[2].split(".")[1],10) / 1000)); //unit of seconds
+	return timestamp_sec_unit;		
+}
+
+</script>
+</body>
+</html>
+<!-- #Jonggil Nam, Radio Protocol Engineer | Mobile Communication R&D Center, LG Electronics | LG Science Park, Seoul, Korea | E: jonggil.nam@lge.com, M:+82-10-8709-6299 -->
+
