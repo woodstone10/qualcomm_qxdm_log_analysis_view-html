@@ -13,5 +13,6 @@ as well as while doing replay a log when you are looking into the log.
 I provides comprehensive tables and instinctive graphs. 
 New view will be created upon your request.
 
+![image](https://user-images.githubusercontent.com/77954837/114699536-65c62000-9d5b-11eb-94cf-79ba500cd04e.png)
 
 
