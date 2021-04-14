@@ -15,4 +15,13 @@ New view will be created upon your request.
 
 ![image](https://user-images.githubusercontent.com/77954837/114699536-65c62000-9d5b-11eb-94cf-79ba500cd04e.png)
 
+![image](https://user-images.githubusercontent.com/77954837/114699700-98701880-9d5b-11eb-8cd7-82e69c6ee035.png)
+
+![image](https://user-images.githubusercontent.com/77954837/114699735-a1f98080-9d5b-11eb-8c49-01a0068b714d.png)
+
+![image](https://user-images.githubusercontent.com/77954837/114699765-aa51bb80-9d5b-11eb-86a5-f661d5051dce.png)
+
+![image](https://user-images.githubusercontent.com/77954837/114699786-b0e03300-9d5b-11eb-9b90-aacacdc676a9.png)
+
+![image](https://user-images.githubusercontent.com/77954837/114699803-b8074100-9d5b-11eb-96b4-b5610b741295.png)
 
